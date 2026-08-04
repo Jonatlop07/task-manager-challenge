@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigType } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { environmentConfig } from './config/environment.config';
+import { environmentConfig } from '@api/config';
 
 @Module({
   imports: [
@@ -27,7 +25,5 @@ import { environmentConfig } from './config/environment.config';
       }),
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
-export class AppModule {}
+export class ApiModule {}

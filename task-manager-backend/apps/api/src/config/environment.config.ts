@@ -14,7 +14,6 @@ export interface EnvironmentConfiguration {
     password: string;
     name: string;
     ssl: boolean;
-    synchronize: boolean;
   };
 }
 
@@ -72,7 +71,6 @@ export function loadEnvironment(
       password: getRequiredVariable(environment, 'DB_PASSWORD'),
       name: getRequiredVariable(environment, 'DB_DATABASE'),
       ssl: parseBoolean(environment.DB_SSL, 'DB_SSL'),
-      synchronize: parseBoolean(environment.DB_SYNCHRONIZE, 'DB_SYNCHRONIZE'),
     },
   };
 }
