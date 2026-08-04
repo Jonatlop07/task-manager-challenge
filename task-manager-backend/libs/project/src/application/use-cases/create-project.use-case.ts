@@ -1,13 +1,19 @@
-import { Project, ProjectId } from "@project/domain";
-import { ProjectCreationResult, ProjectCreationStore } from "../ports";
+import { Project, ProjectId, ProjectSnapshot } from "@project/domain";
+import { PROJECT_CREATION_STORE_RESULT_STATUSES, ProjectCreationStore } from "../ports";
 import { IdGenerator } from "@shared/identity";
+import { PROJECT_APPLICATION_ERROR_CODES, PROJECT_APPLICATION_ERROR_MESSAGES, ProjectApplicationError } from "../errors";
+import { ERROR_CATEGORIES } from "@shared/errors";
 
-type CreateProjectCommand = Readonly<{
+export type CreateProjectCommand = Readonly<{
+  idempotencyKey: string;
   name: string;
   description?: string;
 }>;
 
-type CreateProjectResult = ProjectCreationResult;
+export type CreateProjectResult = {
+  project: ProjectSnapshot;
+  idempotentReplay: boolean;
+};
 
 export class CreateProjectUseCase {
   constructor(
@@ -22,8 +28,28 @@ export class CreateProjectUseCase {
       name: command.name,
       description: command.description,
     });
-    return this.store.save({
+
+    const storeResult = await this.store.save({
+      idempotencyKey: command.idempotencyKey,
       project: project.toSnapshot(),
     });
+
+    if (storeResult.status === PROJECT_CREATION_STORE_RESULT_STATUSES.IDEMPOTENCY_CONFLICT) {
+      throw new ProjectApplicationError(
+        PROJECT_APPLICATION_ERROR_CODES.IDEMPOTENCY_CONFLICT,
+        PROJECT_APPLICATION_ERROR_MESSAGES.IDEMPOTENCY_CONFLICT,
+        {
+          category: ERROR_CATEGORIES.IDEMPOTENCY_CONFLICT,
+          retryable: false,
+        },
+      );
+    }
+
+    const idempotentReplay = storeResult.status === PROJECT_CREATION_STORE_RESULT_STATUSES.REPLAYED;
+
+    return {
+      idempotentReplay,
+      project: storeResult.project,
+    };
   }
 }
