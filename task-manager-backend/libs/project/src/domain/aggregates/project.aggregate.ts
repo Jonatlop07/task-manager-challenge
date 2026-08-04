@@ -9,7 +9,7 @@ interface ProjectProperties {
 interface CreateProjectProperties {
   id: ProjectId;
   name: string;
-  description?: ProjectDescription;
+  description?: string;
 }
 
 export type ProjectSnapshot = Readonly<{
@@ -21,23 +21,31 @@ export type ProjectSnapshot = Readonly<{
 export class Project {
   private constructor(private readonly properties: ProjectProperties) {}
 
-  public static create(properties: CreateProjectProperties): Project {
+  static create(properties: CreateProjectProperties): Project {
     return new Project({
       id: properties.id,
       name: ProjectName.create(properties.name),
-      description: properties.description ?? ProjectDescription.create(null),
+      description: ProjectDescription.create(properties.description ?? null),
     });
   }
 
-  public get id(): ProjectId {
+  toSnapshot(): ProjectSnapshot {
+    return {
+      id: this.id.value,
+      name: this.name.value,
+      description: this.description.value,
+    }
+  }
+
+  get id(): ProjectId {
     return this.properties.id;
   }
 
-  public get name(): ProjectName {
+  get name(): ProjectName {
     return this.properties.name;
   }
 
-  public get description(): ProjectDescription {
+  get description(): ProjectDescription {
     return this.properties.description;
   }
 }

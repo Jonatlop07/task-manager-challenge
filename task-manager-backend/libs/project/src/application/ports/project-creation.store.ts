@@ -7,7 +7,6 @@ const PROJECT_CREATION_STORE_RESULT_STATUSES = {
 } as const;
 
 export type SaveProjectInput = Readonly<{
-  idempotencyKey: string;
   project: ProjectSnapshot;
 }>;
 

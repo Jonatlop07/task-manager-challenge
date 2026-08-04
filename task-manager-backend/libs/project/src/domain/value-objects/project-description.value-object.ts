@@ -1,17 +1,17 @@
 export class ProjectDescription {
-  private constructor(public readonly value: string | null) {}
+  private constructor(readonly value: string | null) {}
 
-  public static create(value?: string | null): ProjectDescription {
+static create(value?: string | null): ProjectDescription {
     const normalizedValue = value?.trim();
 
     return new ProjectDescription(normalizedValue || null);
   }
 
-  public equals(other: ProjectDescription): boolean {
+  equals(other: ProjectDescription): boolean {
     return this.value === other.value;
   }
 
-  public toString(): string {
+  toString(): string {
     return this.value ?? '';
   }
 }

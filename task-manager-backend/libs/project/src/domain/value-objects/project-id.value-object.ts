@@ -29,11 +29,11 @@ export class ProjectId {
     return new ProjectId(normalizedValue);
   }
 
-  public equals(other: ProjectId): boolean {
+  equals(other: ProjectId): boolean {
     return this.value === other.value;
   }
 
-  public toString(): string {
+  toString(): string {
     return this.value;
   }
 }

@@ -3,9 +3,9 @@ import { PROJECT_ERROR_CODES, ProjectDomainError } from '../errors';
 const PROJECT_NAME_MAX_LENGTH = 256;
 
 export class ProjectName {
-  private constructor(public readonly value: string) {}
+  private constructor(readonly value: string) {}
 
-  public static create(value: string): ProjectName {
+  static create(value: string): ProjectName {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
@@ -25,11 +25,11 @@ export class ProjectName {
     return new ProjectName(normalizedValue);
   }
 
-  public equals(other: ProjectName): boolean {
+  equals(other: ProjectName): boolean {
     return this.value === other.value;
   }
 
-  public toString(): string {
+  toString(): string {
     return this.value;
   }
 }
