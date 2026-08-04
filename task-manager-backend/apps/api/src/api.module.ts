@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigType } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { environmentConfig } from '@api/config';
 
@@ -12,7 +12,7 @@ import { environmentConfig } from '@api/config';
     }),
     TypeOrmModule.forRootAsync({
       inject: [environmentConfig.KEY],
-      useFactory: (config) => ({
+      useFactory: (config: ConfigType<typeof environmentConfig>) => ({
         type: 'postgres',
         host: config.database.host,
         port: config.database.port,
