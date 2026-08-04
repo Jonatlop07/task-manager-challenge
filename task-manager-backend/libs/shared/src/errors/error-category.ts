@@ -12,4 +12,5 @@ export const ERROR_CATEGORIES = {
   VALIDATION: 'validation',
 } as const;
 
-export type ErrorCategory = (typeof ERROR_CATEGORIES)[keyof typeof ERROR_CATEGORIES];
+export type ErrorCategory =
+  (typeof ERROR_CATEGORIES)[keyof typeof ERROR_CATEGORIES];

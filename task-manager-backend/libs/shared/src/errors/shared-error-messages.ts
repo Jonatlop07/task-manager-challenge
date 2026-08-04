@@ -1,3 +1,1 @@
-export const SHARED_ERROR_MESSAGES = {
-
-} as const;
+export const SHARED_ERROR_MESSAGES = {} as const;

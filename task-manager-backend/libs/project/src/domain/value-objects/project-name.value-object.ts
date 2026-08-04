@@ -1,4 +1,4 @@
-import { PROJECT_ERROR_CODES, ProjectDomainError } from "../errors";
+import { PROJECT_ERROR_CODES, ProjectDomainError } from '../errors';
 
 const PROJECT_NAME_MAX_LENGTH = 256;
 
@@ -9,7 +9,10 @@ export class ProjectName {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
-      throw new ProjectDomainError(PROJECT_ERROR_CODES.PROJECT_NAME_REQUIRED, PROJECT_ERROR_CODES.PROJECT_NAME_INVALID_LENGTH);
+      throw new ProjectDomainError(
+        PROJECT_ERROR_CODES.PROJECT_NAME_REQUIRED,
+        PROJECT_ERROR_CODES.PROJECT_NAME_INVALID_LENGTH,
+      );
     }
 
     if (normalizedValue.length > PROJECT_NAME_MAX_LENGTH) {

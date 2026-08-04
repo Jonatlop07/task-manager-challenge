@@ -1,5 +1,11 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
-import { PROJECT_TABLE_NAME } from "../../constants/project-table.constants";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { PROJECT_TABLE_NAME } from '../../constants/project-table.constants';
 
 @Entity({ name: PROJECT_TABLE_NAME })
 export class ProjectOrmEntity {
