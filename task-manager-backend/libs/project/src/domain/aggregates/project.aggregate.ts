@@ -12,6 +12,11 @@ interface CreateProjectProperties {
   description?: string;
 }
 
+interface UpdateProjectProperties {
+  name?: string;
+  description?: string | null;
+}
+
 export type ProjectSnapshot = Readonly<{
   id: string;
   name: string;
@@ -27,6 +32,26 @@ export class Project {
       name: ProjectName.create(properties.name),
       description: ProjectDescription.create(properties.description ?? null),
     });
+  }
+
+  static restore(snapshot: ProjectSnapshot): Project {
+    return new Project({
+      id: ProjectId.create(snapshot.id),
+      name: ProjectName.create(snapshot.name),
+      description: ProjectDescription.create(snapshot.description),
+    });
+  }
+
+  update(properties: UpdateProjectProperties): void {
+    if (properties.name !== undefined) {
+      this.properties.name = ProjectName.create(properties.name);
+    }
+
+    if (properties.description !== undefined) {
+      this.properties.description = ProjectDescription.create(
+        properties.description,
+      );
+    }
   }
 
   toSnapshot(): ProjectSnapshot {
