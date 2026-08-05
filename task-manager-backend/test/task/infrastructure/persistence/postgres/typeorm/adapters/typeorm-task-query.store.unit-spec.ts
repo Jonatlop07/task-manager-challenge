@@ -34,6 +34,7 @@ describe('TypeOrmTaskQueryStore', () => {
   let getMany: jest.MockedFunction<
     SelectQueryBuilder<TaskOrmEntity>['getMany']
   >;
+  let findOneBy: jest.MockedFunction<Repository<TaskOrmEntity>['findOneBy']>;
   let getRepository: jest.MockedFunction<(entity: unknown) => unknown>;
   let store: TypeOrmTaskQueryStore;
 
@@ -53,7 +54,11 @@ describe('TypeOrmTaskQueryStore', () => {
     });
 
     createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
-    getRepository = jest.fn().mockReturnValue({ createQueryBuilder });
+    findOneBy = jest.fn().mockResolvedValue(taskEntity);
+    getRepository = jest.fn().mockReturnValue({
+      createQueryBuilder,
+      findOneBy,
+    });
 
     const dataSource = {
       getRepository,
@@ -62,19 +67,19 @@ describe('TypeOrmTaskQueryStore', () => {
     store = new TypeOrmTaskQueryStore(dataSource);
   });
 
-  it('lists and maps tasks for a project in a stable order', async () => {
-    const result = await store.findByProjectId({ projectId });
+  describe('findById', () => {
+    it('finds and maps a task scoped to its project', async () => {
+      const result = await store.findById({
+        projectId,
+        taskId: taskEntity.id,
+      });
 
-    expect(getRepository).toHaveBeenCalledWith(TaskOrmEntity);
-    expect(createQueryBuilder).toHaveBeenCalledWith('task');
-    expect(where).toHaveBeenCalledWith('task.projectId = :projectId', {
-      projectId,
-    });
-    expect(andWhere).not.toHaveBeenCalled();
-    expect(orderBy).toHaveBeenCalledWith('task.createdAt', 'ASC');
-    expect(addOrderBy).toHaveBeenCalledWith('task.id', 'ASC');
-    expect(result).toEqual([
-      {
+      expect(getRepository).toHaveBeenCalledWith(TaskOrmEntity);
+      expect(findOneBy).toHaveBeenCalledWith({
+        id: taskEntity.id,
+        projectId,
+      });
+      expect(result).toEqual({
         id: taskEntity.id,
         projectId: taskEntity.projectId,
         title: taskEntity.title,
@@ -82,51 +87,87 @@ describe('TypeOrmTaskQueryStore', () => {
         status: taskEntity.status,
         priority: taskEntity.priority,
         dueDate: dueDate.toISOString(),
-      },
-    ]);
-  });
-
-  it('applies status and priority filters', async () => {
-    await store.findByProjectId({
-      projectId,
-      status: TaskStatus.InProgress,
-      priority: TaskPriority.High,
+      });
     });
 
-    expect(andWhere).toHaveBeenNthCalledWith(1, 'task.status = :status', {
-      status: TaskStatus.InProgress,
-    });
-    expect(andWhere).toHaveBeenNthCalledWith(2, 'task.priority = :priority', {
-      priority: TaskPriority.High,
+    it('returns null when the task does not exist in the project', async () => {
+      findOneBy.mockResolvedValue(null);
+
+      await expect(
+        store.findById({ projectId, taskId: 'missing-task' }),
+      ).resolves.toBeNull();
     });
   });
 
-  it('searches title and description using an escaped literal pattern', async () => {
-    await store.findByProjectId({
-      projectId,
-      search: String.raw`design_100%\ready`,
+  describe('findByProjectId', () => {
+    it('lists and maps tasks for a project in a stable order', async () => {
+      const result = await store.findByProjectId({ projectId });
+
+      expect(getRepository).toHaveBeenCalledWith(TaskOrmEntity);
+      expect(createQueryBuilder).toHaveBeenCalledWith('task');
+      expect(where).toHaveBeenCalledWith('task.projectId = :projectId', {
+        projectId,
+      });
+      expect(andWhere).not.toHaveBeenCalled();
+      expect(orderBy).toHaveBeenCalledWith('task.createdAt', 'ASC');
+      expect(addOrderBy).toHaveBeenCalledWith('task.id', 'ASC');
+      expect(result).toEqual([
+        {
+          id: taskEntity.id,
+          projectId: taskEntity.projectId,
+          title: taskEntity.title,
+          description: taskEntity.description,
+          status: taskEntity.status,
+          priority: taskEntity.priority,
+          dueDate: dueDate.toISOString(),
+        },
+      ]);
     });
 
-    expect(andWhere).toHaveBeenCalledWith(
-      `(task.title ILIKE :search ESCAPE '\\' OR task.description ILIKE :search ESCAPE '\\')`,
-      { search: String.raw`%design\_100\%\\ready%` },
-    );
-  });
+    it('applies status and priority filters', async () => {
+      await store.findByProjectId({
+        projectId,
+        status: TaskStatus.InProgress,
+        priority: TaskPriority.High,
+      });
 
-  it('maps a missing due date to null', async () => {
-    getMany.mockResolvedValue([
-      Object.assign(new TaskOrmEntity(), taskEntity, { dueDate: null }),
-    ]);
+      expect(andWhere).toHaveBeenNthCalledWith(1, 'task.status = :status', {
+        status: TaskStatus.InProgress,
+      });
+      expect(andWhere).toHaveBeenNthCalledWith(2, 'task.priority = :priority', {
+        priority: TaskPriority.High,
+      });
+    });
 
-    const result = await store.findByProjectId({ projectId });
+    it('searches title and description using an escaped literal pattern', async () => {
+      await store.findByProjectId({
+        projectId,
+        search: String.raw`design_100%\ready`,
+      });
 
-    expect(result[0]?.dueDate).toBeNull();
-  });
+      expect(andWhere).toHaveBeenCalledWith(
+        `(task.title ILIKE :search ESCAPE '\\' OR task.description ILIKE :search ESCAPE '\\')`,
+        { search: String.raw`%design\_100\%\\ready%` },
+      );
+    });
 
-  it('propagates query errors', async () => {
-    const queryError = new Error('Query failed');
-    getMany.mockRejectedValue(queryError);
+    it('maps a missing due date to null', async () => {
+      getMany.mockResolvedValue([
+        Object.assign(new TaskOrmEntity(), taskEntity, { dueDate: null }),
+      ]);
 
-    await expect(store.findByProjectId({ projectId })).rejects.toBe(queryError);
+      const result = await store.findByProjectId({ projectId });
+
+      expect(result[0]?.dueDate).toBeNull();
+    });
+
+    it('propagates query errors', async () => {
+      const queryError = new Error('Query failed');
+      getMany.mockRejectedValue(queryError);
+
+      await expect(store.findByProjectId({ projectId })).rejects.toBe(
+        queryError,
+      );
+    });
   });
 });

@@ -1,6 +1,8 @@
 import type {
   FindTasksByProjectIdQuery,
   TaskListQueryStore,
+  TaskQueryStore,
+  FindTaskByIdQuery,
 } from '@task/application';
 import type { TaskSnapshot } from '@task/domain';
 import { DataSource, type SelectQueryBuilder } from 'typeorm';
@@ -8,8 +10,19 @@ import { TaskOrmEntity } from '../entities';
 
 const TASK_ALIAS = 'task';
 
-export class TypeOrmTaskQueryStore implements TaskListQueryStore {
+export class TypeOrmTaskQueryStore
+  implements TaskListQueryStore, TaskQueryStore
+{
   constructor(private readonly dataSource: DataSource) {}
+
+  async findById(query: FindTaskByIdQuery): Promise<TaskSnapshot | null> {
+    const task = await this.taskRepository.findOneBy({
+      id: query.taskId,
+      projectId: query.projectId,
+    });
+
+    return task ? this.toSnapshot(task) : null;
+  }
 
   async findByProjectId(
     query: FindTasksByProjectIdQuery,
