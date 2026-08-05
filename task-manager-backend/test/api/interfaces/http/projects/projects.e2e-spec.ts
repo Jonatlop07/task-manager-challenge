@@ -9,6 +9,7 @@ import { PROJECT_HTTP_LIMITS } from '@api/interfaces/http/projects/projects-http
 import type {
   CreateProjectUseCase,
   DeleteProjectUseCase,
+  GetProjectUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import {
@@ -33,6 +34,7 @@ describe('Projects HTTP API', () => {
   let execute: jest.MockedFunction<CreateProjectUseCase['execute']>;
   let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
   let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
+  let getProject: jest.MockedFunction<GetProjectUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
@@ -40,6 +42,7 @@ describe('Projects HTTP API', () => {
     execute = jest.fn();
     updateProject = jest.fn();
     deleteProject = jest.fn();
+    getProject = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -56,6 +59,10 @@ describe('Projects HTTP API', () => {
           provide: API_PROVIDER_TOKENS.DELETE_PROJECT_USE_CASE,
           useValue: { execute: deleteProject },
         },
+        {
+          provide: API_PROVIDER_TOKENS.GET_PROJECT_USE_CASE,
+          useValue: { execute: getProject },
+        },
       ],
     }).compile();
 
@@ -69,6 +76,7 @@ describe('Projects HTTP API', () => {
     execute.mockReset();
     updateProject.mockReset();
     deleteProject.mockReset();
+    getProject.mockReset();
   });
 
   afterAll(async () => {
@@ -290,6 +298,52 @@ describe('Projects HTTP API', () => {
 
       const response = await request(server)
         .delete(`/projects/${project.id}`)
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code: PROJECT_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          message: PROJECT_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
+    });
+  });
+
+  describe('GET /projects/:projectId', () => {
+    it('responds with 200 and the project', async () => {
+      getProject.mockResolvedValue({ project });
+
+      const response = await request(server)
+        .get(`/projects/${project.id}`)
+        .expect(200);
+
+      expect(response.body).toEqual({ project });
+      expect(getProject).toHaveBeenCalledWith({ projectId: project.id });
+    });
+
+    it('responds with 400 when the project id is too long', async () => {
+      const response = await request(server)
+        .get(`/projects/${'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1)}`)
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(getProject).not.toHaveBeenCalled();
+    });
+
+    it('responds with 404 when the project does not exist', async () => {
+      getProject.mockRejectedValue(
+        new ProjectApplicationError(
+          PROJECT_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          PROJECT_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          { category: ERROR_CATEGORIES.NOT_FOUND },
+        ),
+      );
+
+      const response = await request(server)
+        .get(`/projects/${project.id}`)
         .expect(404);
 
       expect(response.body).toEqual({

@@ -1,6 +1,7 @@
 import type {
   CreateProjectUseCase,
   DeleteProjectUseCase,
+  GetProjectUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import { ProjectsController } from '@api/interfaces/http/projects/projects.controller';
@@ -25,6 +26,7 @@ describe('ProjectsController', () => {
   let execute: jest.MockedFunction<CreateProjectUseCase['execute']>;
   let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
   let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
+  let getProject: jest.MockedFunction<GetProjectUseCase['execute']>;
   let setStatus: jest.Mock;
   let response: Response;
   let controller: ProjectsController;
@@ -33,12 +35,14 @@ describe('ProjectsController', () => {
     execute = jest.fn();
     updateProject = jest.fn();
     deleteProject = jest.fn();
+    getProject = jest.fn();
     setStatus = jest.fn();
     response = { status: setStatus } as unknown as Response;
     controller = new ProjectsController(
       { execute },
       { execute: updateProject },
       { execute: deleteProject },
+      { execute: getProject },
     );
   });
 
@@ -294,6 +298,47 @@ describe('ProjectsController', () => {
       deleteProject.mockRejectedValue(useCaseError);
 
       const execution = controller.deleteProject({ projectId: project.id });
+
+      await expect(execution).rejects.toBe(useCaseError);
+    });
+  });
+
+  describe('getProject', () => {
+    it('normalizes the project id and returns the project', async () => {
+      getProject.mockResolvedValue({ project });
+
+      const result = await controller.getProject({
+        projectId: `  ${project.id}  `,
+      });
+
+      expect(getProject).toHaveBeenCalledWith({ projectId: project.id });
+      expect(result).toEqual({ project });
+    });
+
+    it.each([
+      { scenario: 'missing', params: {} },
+      { scenario: 'blank', params: { projectId: '   ' } },
+      {
+        scenario: 'too long',
+        params: {
+          projectId: 'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1),
+        },
+      },
+    ])('rejects a $scenario project id', async ({ params }) => {
+      const execution = controller.getProject(params);
+
+      await expect(execution).rejects.toMatchObject({
+        code: HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
+        message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
+      });
+      expect(getProject).not.toHaveBeenCalled();
+    });
+
+    it('propagates query use case errors', async () => {
+      const useCaseError = new Error('Query failed');
+      getProject.mockRejectedValue(useCaseError);
+
+      const execution = controller.getProject({ projectId: project.id });
 
       await expect(execution).rejects.toBe(useCaseError);
     });

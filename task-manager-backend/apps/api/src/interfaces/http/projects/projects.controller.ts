@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Headers,
   HttpCode,
   Inject,
@@ -18,11 +19,13 @@ import {
 import {
   CreateProjectUseCase,
   DeleteProjectUseCase,
+  GetProjectUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import type {
   CreateProjectCommand,
   CreateProjectResult,
+  GetProjectResult,
   UpdateProjectResult,
 } from '@project/application';
 import {
@@ -42,6 +45,7 @@ import type { Response } from 'express';
 type HeaderMap = ApiHttpHeaderMap;
 type CreateProjectHttpResult = CreateProjectResult;
 type UpdateProjectHttpResult = UpdateProjectResult;
+type GetProjectHttpResult = GetProjectResult;
 
 @Controller(PROJECT_HTTP_ROUTES.PROJECTS)
 export class ProjectsController {
@@ -61,6 +65,8 @@ export class ProjectsController {
       DeleteProjectUseCase,
       'execute'
     >,
+    @Inject(API_PROVIDER_TOKENS.GET_PROJECT_USE_CASE)
+    private readonly getProjectUseCase: Pick<GetProjectUseCase, 'execute'>,
   ) {}
 
   @Post()
@@ -105,6 +111,15 @@ export class ProjectsController {
     const parsedParams = parseProjectLifecycleParams(params);
 
     await this.deleteProjectUseCase.execute({
+      projectId: parsedParams.projectId,
+    });
+  }
+
+  @Get(PROJECT_HTTP_ROUTES.PROJECT)
+  async getProject(@Param() params: unknown): Promise<GetProjectHttpResult> {
+    const parsedParams = parseProjectLifecycleParams(params);
+
+    return this.getProjectUseCase.execute({
       projectId: parsedParams.projectId,
     });
   }
