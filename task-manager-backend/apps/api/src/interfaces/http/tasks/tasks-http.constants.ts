@@ -1,5 +1,6 @@
 export const TASK_HTTP_LIMITS = {
   PROJECT_ID_MAX_LENGTH: 64,
+  SEARCH_MAX_LENGTH: 150,
   TITLE_MAX_LENGTH: 150,
 } as const;
 

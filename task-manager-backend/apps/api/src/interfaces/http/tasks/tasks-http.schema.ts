@@ -3,7 +3,7 @@ import {
   HTTP_ERROR_CODES,
   HTTP_ERROR_MESSAGES,
 } from '@api/interfaces/http/errors/http-error.constants';
-import { TaskPriority } from '@task/domain';
+import { TaskPriority, TaskStatus } from '@task/domain';
 import z from 'zod';
 import { TASK_HTTP_LIMITS } from './tasks-http.constants';
 
@@ -22,9 +22,22 @@ const createTaskHttpRequestSchema = z.object({
   dueDate: z.iso.datetime({ offset: true }).nullable().optional(),
 });
 
+const listTasksHttpQuerySchema = z.object({
+  status: z.enum(TaskStatus).optional(),
+  priority: z.enum(TaskPriority).optional(),
+  search: z
+    .string()
+    .trim()
+    .max(TASK_HTTP_LIMITS.SEARCH_MAX_LENGTH)
+    .optional()
+    .transform((search) => search || undefined),
+});
+
 export type CreateTaskHttpRequest = z.infer<typeof createTaskHttpRequestSchema>;
 
 export type TaskCollectionParams = z.infer<typeof taskCollectionParamsSchema>;
+
+export type ListTasksHttpQuery = z.infer<typeof listTasksHttpQuerySchema>;
 
 export const parseCreateTaskHttpRequest = (
   value: unknown,
@@ -50,6 +63,19 @@ export const parseTaskCollectionParams = (
     throw new ApiInterfaceError(
       HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
       HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
+    );
+  }
+
+  return result.data;
+};
+
+export const parseListTasksHttpQuery = (value: unknown): ListTasksHttpQuery => {
+  const result = listTasksHttpQuerySchema.safeParse(value);
+
+  if (!result.success) {
+    throw new ApiInterfaceError(
+      HTTP_ERROR_CODES.INVALID_REQUEST_QUERY,
+      HTTP_ERROR_MESSAGES.INVALID_REQUEST_QUERY,
     );
   }
 

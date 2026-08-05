@@ -9,7 +9,7 @@ import { TasksController } from '@api/interfaces/http/tasks/tasks.controller';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ERROR_CATEGORIES, ERROR_LAYERS } from '@shared/errors';
-import type { CreateTaskUseCase } from '@task/application';
+import type { CreateTaskUseCase, ListTasksUseCase } from '@task/application';
 import {
   TASK_APPLICATION_ERROR_CODES,
   TASK_APPLICATION_ERROR_MESSAGES,
@@ -32,11 +32,13 @@ describe('Tasks HTTP API', () => {
   };
 
   let createTask: jest.MockedFunction<CreateTaskUseCase['execute']>;
+  let listTasks: jest.MockedFunction<ListTasksUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
   beforeAll(async () => {
     createTask = jest.fn();
+    listTasks = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [TasksController],
@@ -44,6 +46,10 @@ describe('Tasks HTTP API', () => {
         {
           provide: API_PROVIDER_TOKENS.CREATE_TASK_USE_CASE,
           useValue: { execute: createTask },
+        },
+        {
+          provide: API_PROVIDER_TOKENS.LIST_TASKS_USE_CASE,
+          useValue: { execute: listTasks },
         },
       ],
     }).compile();
@@ -56,6 +62,7 @@ describe('Tasks HTTP API', () => {
 
   beforeEach(() => {
     createTask.mockReset();
+    listTasks.mockReset();
   });
 
   afterAll(async () => {
@@ -147,6 +154,104 @@ describe('Tasks HTTP API', () => {
     });
   });
 
+  describe('GET /projects/:projectId/tasks', () => {
+    it('responds with 200 and forwards the normalized filters', async () => {
+      listTasks.mockResolvedValue({ tasks: [task] });
+
+      const response = await request(server)
+        .get(`/projects/${projectId}/tasks`)
+        .query({
+          status: TaskStatus.Pending,
+          priority: TaskPriority.High,
+          search: '  technical design  ',
+        })
+        .expect(200);
+
+      expect(response.body).toEqual({ tasks: [task] });
+      expect(listTasks).toHaveBeenCalledWith({
+        projectId,
+        status: TaskStatus.Pending,
+        priority: TaskPriority.High,
+        search: 'technical design',
+      });
+    });
+
+    it('responds with an empty collection when the project has no tasks', async () => {
+      listTasks.mockResolvedValue({ tasks: [] });
+
+      const response = await request(server)
+        .get(`/projects/${projectId}/tasks`)
+        .query({ search: '   ' })
+        .expect(200);
+
+      expect(response.body).toEqual({ tasks: [] });
+      expect(listTasks).toHaveBeenCalledWith({
+        projectId,
+        status: undefined,
+        priority: undefined,
+        search: undefined,
+      });
+    });
+
+    it.each([
+      {
+        scenario: 'invalid status',
+        query: { status: 'blocked' },
+      },
+      {
+        scenario: 'invalid priority',
+        query: { priority: 'urgent' },
+      },
+      {
+        scenario: 'search that is too long',
+        query: { search: 'a'.repeat(TASK_HTTP_LIMITS.SEARCH_MAX_LENGTH + 1) },
+      },
+    ])('responds with 400 for an $scenario', async ({ query }) => {
+      const response = await request(server)
+        .get(`/projects/${projectId}/tasks`)
+        .query(query)
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestQueryErrorResponse());
+      expect(listTasks).not.toHaveBeenCalled();
+    });
+
+    it('responds with 400 when the project id is too long', async () => {
+      const response = await request(server)
+        .get(
+          `/projects/${'a'.repeat(TASK_HTTP_LIMITS.PROJECT_ID_MAX_LENGTH + 1)}/tasks`,
+        )
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(listTasks).not.toHaveBeenCalled();
+    });
+
+    it('responds with 404 when the project does not exist', async () => {
+      listTasks.mockRejectedValue(
+        new TaskApplicationError(
+          TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          { category: ERROR_CATEGORIES.NOT_FOUND },
+        ),
+      );
+
+      const response = await request(server)
+        .get(`/projects/${projectId}/tasks`)
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code: TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          message: TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
+    });
+  });
+
   function invalidRequestBodyErrorResponse(): object {
     return {
       error: {
@@ -164,6 +269,18 @@ describe('Tasks HTTP API', () => {
       error: {
         code: HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
         message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
+        layer: ERROR_LAYERS.INTERFACE,
+        category: ERROR_CATEGORIES.VALIDATION,
+        retryable: false,
+      },
+    };
+  }
+
+  function invalidRequestQueryErrorResponse(): object {
+    return {
+      error: {
+        code: HTTP_ERROR_CODES.INVALID_REQUEST_QUERY,
+        message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_QUERY,
         layer: ERROR_LAYERS.INTERFACE,
         category: ERROR_CATEGORIES.VALIDATION,
         retryable: false,

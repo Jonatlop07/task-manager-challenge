@@ -7,6 +7,7 @@ export const HTTP_ERROR_CODES = {
   INVALID_REQUEST_BODY: 'api.invalid-request-body',
   UNEXPECTED_ERROR: 'api.unexpected-error',
   INVALID_REQUEST_PARAM: 'api.invalid-request-param',
+  INVALID_REQUEST_QUERY: 'api.invalid-request-query',
 } as const;
 
 export const HTTP_ERROR_MESSAGES = {
@@ -14,6 +15,8 @@ export const HTTP_ERROR_MESSAGES = {
   UNEXPECTED_ERROR: 'Unexpected API error.',
   INVALID_REQUEST_PARAM:
     'Request path parameters do not match the expected contract.',
+  INVALID_REQUEST_QUERY:
+    'Request query parameters do not match the expected contract.',
 } as const;
 
 export const HTTP_STATUS_CODES = {
