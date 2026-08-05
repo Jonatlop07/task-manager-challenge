@@ -42,7 +42,8 @@ import { DataSource } from 'typeorm';
     {
       provide: API_PROVIDER_TOKENS.CREATE_PROJECT_USE_CASE,
       inject: [DataSource],
-      useFactory: (dataSource: DataSource) => createApiCreateProjectUseCase({ dataSource }),
+      useFactory: (dataSource: DataSource) =>
+        createApiCreateProjectUseCase({ dataSource }),
     },
   ],
 })

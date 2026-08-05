@@ -23,7 +23,7 @@ export type ProjectCreationResult = Readonly<
   | {
       status: typeof PROJECT_CREATION_STORE_RESULT_STATUSES.IDEMPOTENCY_CONFLICT;
     }
-  >;
+>;
 
 export interface ProjectCreationStore {
   save(input: SaveProjectInput): Promise<ProjectCreationResult>;

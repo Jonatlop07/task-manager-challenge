@@ -1,8 +1,15 @@
-import { Project, ProjectId, ProjectSnapshot } from "@project/domain";
-import { PROJECT_CREATION_STORE_RESULT_STATUSES, ProjectCreationStore } from "../ports";
-import { IdGenerator } from "@shared/identity";
-import { PROJECT_APPLICATION_ERROR_CODES, PROJECT_APPLICATION_ERROR_MESSAGES, ProjectApplicationError } from "../errors";
-import { ERROR_CATEGORIES } from "@shared/errors";
+import { Project, ProjectId, ProjectSnapshot } from '@project/domain';
+import {
+  PROJECT_CREATION_STORE_RESULT_STATUSES,
+  ProjectCreationStore,
+} from '../ports';
+import { IdGenerator } from '@shared/identity';
+import {
+  PROJECT_APPLICATION_ERROR_CODES,
+  PROJECT_APPLICATION_ERROR_MESSAGES,
+  ProjectApplicationError,
+} from '../errors';
+import { ERROR_CATEGORIES } from '@shared/errors';
 
 export const CREATE_PROJECT_LIMITS = {
   IDEMPOTENCY_KEY_MAX_LENGTH: 128,
@@ -38,7 +45,10 @@ export class CreateProjectUseCase {
       project: project.toSnapshot(),
     });
 
-    if (storeResult.status === PROJECT_CREATION_STORE_RESULT_STATUSES.IDEMPOTENCY_CONFLICT) {
+    if (
+      storeResult.status ===
+      PROJECT_CREATION_STORE_RESULT_STATUSES.IDEMPOTENCY_CONFLICT
+    ) {
       throw new ProjectApplicationError(
         PROJECT_APPLICATION_ERROR_CODES.IDEMPOTENCY_CONFLICT,
         PROJECT_APPLICATION_ERROR_MESSAGES.IDEMPOTENCY_CONFLICT,
@@ -49,7 +59,8 @@ export class CreateProjectUseCase {
       );
     }
 
-    const idempotentReplay = storeResult.status === PROJECT_CREATION_STORE_RESULT_STATUSES.REPLAYED;
+    const idempotentReplay =
+      storeResult.status === PROJECT_CREATION_STORE_RESULT_STATUSES.REPLAYED;
 
     return {
       idempotentReplay,

@@ -23,7 +23,9 @@ export type HttpErrorResponse = Readonly<{
   body: HttpErrorResponseBody;
 }>;
 
-export const mapExceptionToHttpError = (exception: unknown): HttpErrorResponse => {
+export const mapExceptionToHttpError = (
+  exception: unknown,
+): HttpErrorResponse => {
   if (exception instanceof AppError) {
     return {
       statusCode: mapAppErrorStatusCode(exception),
@@ -55,7 +57,9 @@ const toHttpErrorResponseBody = (
   layer: error.layer,
   category: error.category,
   retryable: error.retryable,
-  ...(error.details === undefined ? {} : { [HTTP_ERROR_RESPONSE_KEYS.DETAILS]: error.details }),
+  ...(error.details === undefined
+    ? {}
+    : { [HTTP_ERROR_RESPONSE_KEYS.DETAILS]: error.details }),
 });
 
 const mapAppErrorStatusCode = (error: AppError): number => {

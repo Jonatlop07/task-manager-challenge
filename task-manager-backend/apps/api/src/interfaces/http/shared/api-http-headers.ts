@@ -2,10 +2,14 @@ export const API_HTTP_HEADER_NAMES = {
   IDEMPOTENCY_KEY: 'idempotency-key',
 } as const;
 
-export type ApiHttpHeaderMap = Readonly<Record<string, string | readonly string[] | undefined>>;
+export type ApiHttpHeaderMap = Readonly<
+  Record<string, string | readonly string[] | undefined>
+>;
 
-export const readHttpHeader = (headers: ApiHttpHeaderMap | undefined, name: string): string =>
-  readOptionalHttpHeader(headers, name) ?? '';
+export const readHttpHeader = (
+  headers: ApiHttpHeaderMap | undefined,
+  name: string,
+): string => readOptionalHttpHeader(headers, name) ?? '';
 
 export const readOptionalHttpHeader = (
   headers: ApiHttpHeaderMap | undefined,
@@ -13,9 +17,9 @@ export const readOptionalHttpHeader = (
 ): string | undefined => {
   const value = headers?.[name];
 
-  if (Array.isArray(value)) {
-    return value[0];
+  if (typeof value === 'string') {
+    return value;
   }
 
-  return typeof value === 'string' ? value : undefined;
+  return value?.[0];
 };

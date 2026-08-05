@@ -1,4 +1,10 @@
-import { AppError, AppErrorDetails, ERROR_CATEGORIES, ERROR_LAYERS, ErrorCategory } from "@shared/errors";
+import {
+  AppError,
+  AppErrorDetails,
+  ERROR_CATEGORIES,
+  ERROR_LAYERS,
+  ErrorCategory,
+} from '@shared/errors';
 
 export type ProjectApplicationErrorOptions = Readonly<{
   category?: ErrorCategory;

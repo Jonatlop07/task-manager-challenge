@@ -1,4 +1,9 @@
-import { AppError, ERROR_CATEGORIES, ERROR_LAYERS, type ErrorCategory } from '@shared/errors';
+import {
+  AppError,
+  ERROR_CATEGORIES,
+  ERROR_LAYERS,
+  type ErrorCategory,
+} from '@shared/errors';
 
 export type ApiInterfaceErrorOptions = Readonly<{
   category?: ErrorCategory;

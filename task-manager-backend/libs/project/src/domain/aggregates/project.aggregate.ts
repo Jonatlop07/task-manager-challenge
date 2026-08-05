@@ -34,7 +34,7 @@ export class Project {
       id: this.id.value,
       name: this.name.value,
       description: this.description.value,
-    }
+    };
   }
 
   get id(): ProjectId {

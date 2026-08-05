@@ -10,14 +10,17 @@ import type {
   ProjectCreationReplayLookupResult,
 } from '@project/application';
 import { DataSource } from 'typeorm';
-import { ProjectIdempotencyRecordOrmEntity, ProjectOrmEntity } from '../entities';
+import {
+  ProjectIdempotencyRecordOrmEntity,
+  ProjectOrmEntity,
+} from '../entities';
 import type { ProjectSnapshot } from '@project/domain';
 
 const PROJECT_CREATION_OPERATION = 'project.create';
 
 export class TypeOrmProjectCreationStore
-  implements ProjectCreationStore, ProjectCreationReplayLookup {
-
+  implements ProjectCreationStore, ProjectCreationReplayLookup
+{
   constructor(private readonly dataSource: DataSource) {}
 
   async save(input: SaveProjectInput): Promise<ProjectCreationResult> {
@@ -56,7 +59,7 @@ export class TypeOrmProjectCreationStore
         project: input.project,
       };
     });
-  };
+  }
 
   async findByIdempotencyKey(
     input: ProjectCreationReplayLookupInput,

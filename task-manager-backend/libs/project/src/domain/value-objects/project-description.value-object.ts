@@ -1,7 +1,7 @@
 export class ProjectDescription {
   private constructor(readonly value: string | null) {}
 
-static create(value?: string | null): ProjectDescription {
+  static create(value?: string | null): ProjectDescription {
     const normalizedValue = value?.trim();
 
     return new ProjectDescription(normalizedValue || null);
