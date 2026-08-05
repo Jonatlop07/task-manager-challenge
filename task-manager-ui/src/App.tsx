@@ -1,9 +1,7 @@
+import { Outlet } from 'react-router';
+
 function App() {
-  return (
-    <main>
-      <h1>Task Manager</h1>
-    </main>
-  );
+  return <Outlet />;
 }
 
 export default App;
