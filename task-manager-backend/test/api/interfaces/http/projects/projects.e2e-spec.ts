@@ -23,6 +23,12 @@ import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
+import type { GetProjectSummaryUseCase } from '@task/application';
+import {
+  TASK_APPLICATION_ERROR_CODES,
+  TASK_APPLICATION_ERROR_MESSAGES,
+  TaskApplicationError,
+} from '@task/application/errors';
 
 describe('Projects HTTP API', () => {
   const idempotencyKey = 'create-project-atlas';
@@ -37,6 +43,9 @@ describe('Projects HTTP API', () => {
   let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
   let getProject: jest.MockedFunction<GetProjectUseCase['execute']>;
   let listProjects: jest.MockedFunction<ListProjectsUseCase['execute']>;
+  let getProjectSummary: jest.MockedFunction<
+    GetProjectSummaryUseCase['execute']
+  >;
   let app: INestApplication;
   let server: Server;
 
@@ -46,6 +55,7 @@ describe('Projects HTTP API', () => {
     deleteProject = jest.fn();
     getProject = jest.fn();
     listProjects = jest.fn();
+    getProjectSummary = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -70,6 +80,10 @@ describe('Projects HTTP API', () => {
           provide: API_PROVIDER_TOKENS.LIST_PROJECTS_USE_CASE,
           useValue: { execute: listProjects },
         },
+        {
+          provide: API_PROVIDER_TOKENS.GET_PROJECT_SUMMARY_USE_CASE,
+          useValue: { execute: getProjectSummary },
+        },
       ],
     }).compile();
 
@@ -85,6 +99,7 @@ describe('Projects HTTP API', () => {
     deleteProject.mockReset();
     getProject.mockReset();
     listProjects.mockReset();
+    getProjectSummary.mockReset();
   });
 
   afterAll(async () => {
@@ -390,6 +405,72 @@ describe('Projects HTTP API', () => {
       const response = await request(server).get('/projects').expect(200);
 
       expect(response.body).toEqual({ projects: [] });
+    });
+  });
+
+  describe('GET /projects/:projectId/summary', () => {
+    const summary = {
+      total: 12,
+      byStatus: {
+        pending: 4,
+        inProgress: 3,
+        completed: 5,
+      },
+      byPriority: {
+        low: 2,
+        medium: 7,
+        high: 3,
+      },
+      overdue: 2,
+      completionPercentage: 41.67,
+    };
+
+    it('responds with 200 and the project summary', async () => {
+      getProjectSummary.mockResolvedValue(summary);
+
+      const response = await request(server)
+        .get(`/projects/${project.id}/summary`)
+        .expect(200);
+
+      expect(response.body).toEqual(summary);
+      expect(getProjectSummary).toHaveBeenCalledWith({
+        projectId: project.id,
+      });
+    });
+
+    it('responds with 400 when the project id is too long', async () => {
+      const response = await request(server)
+        .get(
+          `/projects/${'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1)}/summary`,
+        )
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(getProjectSummary).not.toHaveBeenCalled();
+    });
+
+    it('responds with 404 when the project does not exist', async () => {
+      getProjectSummary.mockRejectedValue(
+        new TaskApplicationError(
+          TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          { category: ERROR_CATEGORIES.NOT_FOUND },
+        ),
+      );
+
+      const response = await request(server)
+        .get(`/projects/${project.id}/summary`)
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code: TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          message: TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
     });
   });
 

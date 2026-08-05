@@ -7,6 +7,7 @@ export const PROJECT_HTTP_HEADERS = {
 export const PROJECT_HTTP_ROUTES = {
   PROJECTS: 'projects',
   PROJECT: ':projectId',
+  PROJECT_SUMMARY: ':projectId/summary',
 } as const;
 
 export const PROJECT_HTTP_RESPONSE_STATUSES = {

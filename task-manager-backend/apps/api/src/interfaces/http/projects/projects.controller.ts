@@ -43,6 +43,10 @@ import {
 import { assertProjectIdempotencyKeyHeader } from './projects-http.idempotency-key';
 import { API_PROVIDER_TOKENS } from '@api/api-provider-tokens';
 import type { Response } from 'express';
+import {
+  GetProjectSummaryUseCase,
+  type GetProjectSummaryResult,
+} from '@task/application';
 
 type HeaderMap = ApiHttpHeaderMap;
 type CreateProjectHttpResult = CreateProjectResult;
@@ -72,6 +76,11 @@ export class ProjectsController {
     private readonly getProjectUseCase: Pick<GetProjectUseCase, 'execute'>,
     @Inject(API_PROVIDER_TOKENS.LIST_PROJECTS_USE_CASE)
     private readonly listProjectsUseCase: Pick<ListProjectsUseCase, 'execute'>,
+    @Inject(API_PROVIDER_TOKENS.GET_PROJECT_SUMMARY_USE_CASE)
+    private readonly getProjectSummaryUseCase: Pick<
+      GetProjectSummaryUseCase,
+      'execute'
+    >,
   ) {}
 
   @Post()
@@ -125,6 +134,17 @@ export class ProjectsController {
     const parsedParams = parseProjectLifecycleParams(params);
 
     return this.getProjectUseCase.execute({
+      projectId: parsedParams.projectId,
+    });
+  }
+
+  @Get(PROJECT_HTTP_ROUTES.PROJECT_SUMMARY)
+  async getProjectSummary(
+    @Param() params: unknown,
+  ): Promise<GetProjectSummaryResult> {
+    const parsedParams = parseProjectLifecycleParams(params);
+
+    return this.getProjectSummaryUseCase.execute({
       projectId: parsedParams.projectId,
     });
   }
