@@ -11,12 +11,14 @@ describe('TypeOrmProjectQueryStore', () => {
   };
 
   let findOneBy: jest.MockedFunction<Repository<ProjectOrmEntity>['findOneBy']>;
+  let find: jest.MockedFunction<Repository<ProjectOrmEntity>['find']>;
   let getRepository: jest.MockedFunction<(entity: unknown) => unknown>;
   let store: TypeOrmProjectQueryStore;
 
   beforeEach(() => {
     findOneBy = jest.fn();
-    getRepository = jest.fn().mockReturnValue({ findOneBy });
+    find = jest.fn();
+    getRepository = jest.fn().mockReturnValue({ findOneBy, find });
 
     const dataSource = {
       getRepository,
@@ -55,6 +57,41 @@ describe('TypeOrmProjectQueryStore', () => {
     findOneBy.mockRejectedValue(repositoryError);
 
     await expect(store.findById(project.id)).rejects.toBe(repositoryError);
+  });
+
+  describe('findAll', () => {
+    it('returns project snapshots ordered by newest creation first', async () => {
+      const secondProject: ProjectSnapshot = {
+        id: 'project-456',
+        name: 'Project Borealis',
+        description: null,
+      };
+      find.mockResolvedValue([
+        createProjectEntity(secondProject),
+        createProjectEntity(project),
+      ]);
+
+      const result = await store.findAll();
+
+      expect(getRepository).toHaveBeenCalledWith(ProjectOrmEntity);
+      expect(find).toHaveBeenCalledWith({
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual([secondProject, project]);
+    });
+
+    it('returns an empty collection when no projects exist', async () => {
+      find.mockResolvedValue([]);
+
+      await expect(store.findAll()).resolves.toEqual([]);
+    });
+
+    it('propagates repository errors', async () => {
+      const repositoryError = new Error('List query failed');
+      find.mockRejectedValue(repositoryError);
+
+      await expect(store.findAll()).rejects.toBe(repositoryError);
+    });
   });
 
   function createProjectEntity(snapshot: ProjectSnapshot): ProjectOrmEntity {
