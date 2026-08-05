@@ -73,3 +73,9 @@ export async function updateProject(
 
   return response.project;
 }
+
+export async function deleteProject(projectId: string): Promise<void> {
+  await httpClient.requestVoid(`/projects/${encodeURIComponent(projectId)}`, {
+    method: 'DELETE',
+  });
+}

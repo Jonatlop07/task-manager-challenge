@@ -7,6 +7,7 @@ import {
   PageHeader,
 } from '../../../shared/components';
 import { CreateProjectDialog } from '../components/create-project-dialog';
+import { DeleteProjectDialog } from '../components/delete-project-dialog';
 import { ProjectList } from '../components/project-list';
 import { ProjectsSkeleton } from '../components/projects-skeleton';
 import { UpdateProjectDialog } from '../components/update-project-dialog';
@@ -18,6 +19,7 @@ export function ProjectsPage() {
   const projectsQuery = useQuery(projectsQueryOptions());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   return (
     <main className={styles.page}>
@@ -86,6 +88,7 @@ export function ProjectsPage() {
 
         {projectsQuery.data && projectsQuery.data.length > 0 ? (
           <ProjectList
+            onDelete={setProjectToDelete}
             onEdit={setProjectToEdit}
             projects={projectsQuery.data}
           />
@@ -99,6 +102,10 @@ export function ProjectsPage() {
       <UpdateProjectDialog
         onClose={() => setProjectToEdit(null)}
         project={projectToEdit}
+      />
+      <DeleteProjectDialog
+        onClose={() => setProjectToDelete(null)}
+        project={projectToDelete}
       />
     </main>
   );
