@@ -2,10 +2,15 @@ import { registerAs } from '@nestjs/config';
 
 const DEFAULT_APP_PORT = 3000;
 const DEFAULT_DATABASE_PORT = 5432;
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+] as const;
 
 export interface EnvironmentConfiguration {
   app: {
     port: number;
+    corsOrigins: string[];
   };
   database: {
     host: string;
@@ -57,12 +62,36 @@ function parseBoolean(
   return normalizedValue === 'true';
 }
 
+function parseCorsOrigins(value: string | undefined): string[] {
+  const origins = value
+    ? value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : [...DEFAULT_CORS_ORIGINS];
+
+  if (origins.length === 0) {
+    throw new Error('CORS_ORIGINS must contain at least one origin');
+  }
+
+  for (const origin of origins) {
+    const url = new URL(origin);
+
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin) {
+      throw new Error(`Invalid CORS origin: ${origin}`);
+    }
+  }
+
+  return origins;
+}
+
 export function loadEnvironment(
   environment: NodeJS.ProcessEnv = process.env,
 ): EnvironmentConfiguration {
   return {
     app: {
       port: parsePort(environment.PORT, 'PORT', DEFAULT_APP_PORT),
+      corsOrigins: parseCorsOrigins(environment.CORS_ORIGINS),
     },
     database: {
       host: getRequiredVariable(environment, 'DB_HOST'),

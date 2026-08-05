@@ -8,6 +8,8 @@ loadDotEnv({
 });
 
 const environment = loadEnvironment();
+const migrationExtension = __filename.endsWith('.ts') ? 'ts' : 'js';
+const migrationsRoot = __filename.endsWith('.ts') ? '' : 'dist/';
 
 export default new DataSource({
   type: 'postgres',
@@ -24,11 +26,7 @@ export default new DataSource({
   migrations: [
     resolve(
       process.cwd(),
-      'libs/*/src/infrastructure/persistence/postgres/typeorm/migrations/*.ts',
-    ),
-    resolve(
-      process.cwd(),
-      'dist/libs/*/src/infrastructure/persistence/postgres/typeorm/migrations/*.js',
+      `${migrationsRoot}libs/*/src/infrastructure/persistence/postgres/typeorm/migrations/*.${migrationExtension}`,
     ),
   ],
 });

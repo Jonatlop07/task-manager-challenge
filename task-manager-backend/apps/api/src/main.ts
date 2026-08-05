@@ -14,6 +14,12 @@ async function bootstrap() {
     environmentConfig.KEY,
   );
 
+  app.enableCors({
+    origin: config.app.corsOrigins,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Accept', 'Content-Type', 'Idempotency-Key'],
+  });
+
   await app.listen(config.app.port);
 }
 
