@@ -6,6 +6,7 @@ import {
   HttpCode,
   Inject,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -14,6 +15,8 @@ import {
   type CreateTaskResult,
   ListTasksUseCase,
   type ListTasksResult,
+  UpdateTaskUseCase,
+  type UpdateTaskResult,
 } from '@task/application';
 import {
   TASK_HTTP_RESPONSE_STATUSES,
@@ -23,6 +26,8 @@ import {
   parseCreateTaskHttpRequest,
   parseListTasksHttpQuery,
   parseTaskCollectionParams,
+  parseTaskLifecycleParams,
+  parseUpdateTaskHttpRequest,
 } from './tasks-http.schema';
 
 @Controller(TASK_HTTP_ROUTES.PROJECT_TASKS)
@@ -32,6 +37,8 @@ export class TasksController {
     private readonly createTaskUseCase: Pick<CreateTaskUseCase, 'execute'>,
     @Inject(API_PROVIDER_TOKENS.LIST_TASKS_USE_CASE)
     private readonly listTasksUseCase: Pick<ListTasksUseCase, 'execute'>,
+    @Inject(API_PROVIDER_TOKENS.UPDATE_TASK_USE_CASE)
+    private readonly updateTaskUseCase: Pick<UpdateTaskUseCase, 'execute'>,
   ) {}
 
   @Post()
@@ -65,6 +72,26 @@ export class TasksController {
       status: parsedQuery.status,
       priority: parsedQuery.priority,
       search: parsedQuery.search,
+    });
+  }
+
+  @Patch(TASK_HTTP_ROUTES.TASK)
+  @HttpCode(TASK_HTTP_RESPONSE_STATUSES.OK)
+  async updateTask(
+    @Param() params: unknown,
+    @Body() body: unknown,
+  ): Promise<UpdateTaskResult> {
+    const parsedParams = parseTaskLifecycleParams(params);
+    const request = parseUpdateTaskHttpRequest(body);
+
+    return this.updateTaskUseCase.execute({
+      projectId: parsedParams.projectId,
+      taskId: parsedParams.taskId,
+      title: request.title,
+      description: request.description,
+      status: request.status,
+      priority: request.priority,
+      dueDate: request.dueDate,
     });
   }
 }

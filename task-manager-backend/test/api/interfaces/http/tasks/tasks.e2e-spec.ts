@@ -9,7 +9,11 @@ import { TasksController } from '@api/interfaces/http/tasks/tasks.controller';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ERROR_CATEGORIES, ERROR_LAYERS } from '@shared/errors';
-import type { CreateTaskUseCase, ListTasksUseCase } from '@task/application';
+import type {
+  CreateTaskUseCase,
+  ListTasksUseCase,
+  UpdateTaskUseCase,
+} from '@task/application';
 import {
   TASK_APPLICATION_ERROR_CODES,
   TASK_APPLICATION_ERROR_MESSAGES,
@@ -33,12 +37,14 @@ describe('Tasks HTTP API', () => {
 
   let createTask: jest.MockedFunction<CreateTaskUseCase['execute']>;
   let listTasks: jest.MockedFunction<ListTasksUseCase['execute']>;
+  let updateTask: jest.MockedFunction<UpdateTaskUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
   beforeAll(async () => {
     createTask = jest.fn();
     listTasks = jest.fn();
+    updateTask = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [TasksController],
@@ -50,6 +56,10 @@ describe('Tasks HTTP API', () => {
         {
           provide: API_PROVIDER_TOKENS.LIST_TASKS_USE_CASE,
           useValue: { execute: listTasks },
+        },
+        {
+          provide: API_PROVIDER_TOKENS.UPDATE_TASK_USE_CASE,
+          useValue: { execute: updateTask },
         },
       ],
     }).compile();
@@ -63,6 +73,7 @@ describe('Tasks HTTP API', () => {
   beforeEach(() => {
     createTask.mockReset();
     listTasks.mockReset();
+    updateTask.mockReset();
   });
 
   afterAll(async () => {
@@ -244,6 +255,141 @@ describe('Tasks HTTP API', () => {
         error: {
           code: TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
           message: TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
+    });
+  });
+
+  describe('PATCH /projects/:projectId/tasks/:taskId', () => {
+    it('responds with 200 and the updated task', async () => {
+      const updatedTask = {
+        ...task,
+        title: 'Review technical design',
+        description: 'Validate the proposed boundaries',
+        status: TaskStatus.InProgress,
+        dueDate: '2026-08-12T20:30:00.000Z',
+      };
+      updateTask.mockResolvedValue({ task: updatedTask });
+
+      const response = await request(server)
+        .patch(`/projects/${projectId}/tasks/${task.id}`)
+        .send({
+          title: '  Review technical design  ',
+          description: '  Validate the proposed boundaries  ',
+          status: TaskStatus.InProgress,
+          dueDate: '2026-08-12T15:30:00-05:00',
+        })
+        .expect(200);
+
+      expect(response.body).toEqual({ task: updatedTask });
+      expect(updateTask).toHaveBeenCalledWith({
+        projectId,
+        taskId: task.id,
+        title: updatedTask.title,
+        description: updatedTask.description,
+        status: updatedTask.status,
+        priority: undefined,
+        dueDate: '2026-08-12T15:30:00-05:00',
+      });
+    });
+
+    it('supports clearing description and due date', async () => {
+      const updatedTask = {
+        ...task,
+        description: null,
+        dueDate: null,
+      };
+      updateTask.mockResolvedValue({ task: updatedTask });
+
+      await request(server)
+        .patch(`/projects/${projectId}/tasks/${task.id}`)
+        .send({ description: null, dueDate: null })
+        .expect(200);
+
+      expect(updateTask).toHaveBeenCalledWith({
+        projectId,
+        taskId: task.id,
+        title: undefined,
+        description: null,
+        status: undefined,
+        priority: undefined,
+        dueDate: null,
+      });
+    });
+
+    it.each([
+      {
+        scenario: 'empty body',
+        body: {},
+      },
+      {
+        scenario: 'blank title',
+        body: { title: '   ' },
+      },
+      {
+        scenario: 'invalid status',
+        body: { status: 'blocked' },
+      },
+      {
+        scenario: 'invalid priority',
+        body: { priority: 'urgent' },
+      },
+      {
+        scenario: 'invalid due date',
+        body: { dueDate: 'not-a-date' },
+      },
+    ])('responds with 400 for an $scenario', async ({ body }) => {
+      const response = await request(server)
+        .patch(`/projects/${projectId}/tasks/${task.id}`)
+        .send(body)
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestBodyErrorResponse());
+      expect(updateTask).not.toHaveBeenCalled();
+    });
+
+    it('responds with 400 when the task id is too long', async () => {
+      const response = await request(server)
+        .patch(
+          `/projects/${projectId}/tasks/${'a'.repeat(TASK_HTTP_LIMITS.TASK_ID_MAX_LENGTH + 1)}`,
+        )
+        .send({ title: task.title })
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(updateTask).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {
+        scenario: 'project does not exist',
+        code: TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+        message: TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      },
+      {
+        scenario: 'task does not exist',
+        code: TASK_APPLICATION_ERROR_CODES.TASK_NOT_FOUND,
+        message: TASK_APPLICATION_ERROR_MESSAGES.TASK_NOT_FOUND,
+      },
+    ])('responds with 404 when the $scenario', async ({ code, message }) => {
+      updateTask.mockRejectedValue(
+        new TaskApplicationError(code, message, {
+          category: ERROR_CATEGORIES.NOT_FOUND,
+        }),
+      );
+
+      const response = await request(server)
+        .patch(`/projects/${projectId}/tasks/${task.id}`)
+        .send({ title: 'Review technical design' })
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code,
+          message,
           layer: ERROR_LAYERS.APPLICATION,
           category: ERROR_CATEGORIES.NOT_FOUND,
           retryable: false,

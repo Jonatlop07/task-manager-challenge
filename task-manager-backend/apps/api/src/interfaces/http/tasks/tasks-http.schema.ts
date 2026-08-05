@@ -15,6 +15,10 @@ const taskCollectionParamsSchema = z.object({
     .max(TASK_HTTP_LIMITS.PROJECT_ID_MAX_LENGTH),
 });
 
+const taskLifecycleParamsSchema = taskCollectionParamsSchema.extend({
+  taskId: z.string().trim().min(1).max(TASK_HTTP_LIMITS.TASK_ID_MAX_LENGTH),
+});
+
 const createTaskHttpRequestSchema = z.object({
   title: z.string().trim().min(1).max(TASK_HTTP_LIMITS.TITLE_MAX_LENGTH),
   description: z.string().trim().min(1).nullable().optional(),
@@ -33,11 +37,37 @@ const listTasksHttpQuerySchema = z.object({
     .transform((search) => search || undefined),
 });
 
+const updateTaskHttpRequestSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .max(TASK_HTTP_LIMITS.TITLE_MAX_LENGTH)
+      .optional(),
+    description: z.string().trim().min(1).nullable().optional(),
+    status: z.enum(TaskStatus).optional(),
+    priority: z.enum(TaskPriority).optional(),
+    dueDate: z.iso.datetime({ offset: true }).nullable().optional(),
+  })
+  .refine(
+    ({ title, description, status, priority, dueDate }) =>
+      title !== undefined ||
+      description !== undefined ||
+      status !== undefined ||
+      priority !== undefined ||
+      dueDate !== undefined,
+  );
+
 export type CreateTaskHttpRequest = z.infer<typeof createTaskHttpRequestSchema>;
 
 export type TaskCollectionParams = z.infer<typeof taskCollectionParamsSchema>;
 
+export type TaskLifecycleParams = z.infer<typeof taskLifecycleParamsSchema>;
+
 export type ListTasksHttpQuery = z.infer<typeof listTasksHttpQuerySchema>;
+
+export type UpdateTaskHttpRequest = z.infer<typeof updateTaskHttpRequestSchema>;
 
 export const parseCreateTaskHttpRequest = (
   value: unknown,
@@ -76,6 +106,36 @@ export const parseListTasksHttpQuery = (value: unknown): ListTasksHttpQuery => {
     throw new ApiInterfaceError(
       HTTP_ERROR_CODES.INVALID_REQUEST_QUERY,
       HTTP_ERROR_MESSAGES.INVALID_REQUEST_QUERY,
+    );
+  }
+
+  return result.data;
+};
+
+export const parseTaskLifecycleParams = (
+  value: unknown,
+): TaskLifecycleParams => {
+  const result = taskLifecycleParamsSchema.safeParse(value);
+
+  if (!result.success) {
+    throw new ApiInterfaceError(
+      HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
+      HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
+    );
+  }
+
+  return result.data;
+};
+
+export const parseUpdateTaskHttpRequest = (
+  value: unknown,
+): UpdateTaskHttpRequest => {
+  const result = updateTaskHttpRequestSchema.safeParse(value);
+
+  if (!result.success) {
+    throw new ApiInterfaceError(
+      HTTP_ERROR_CODES.INVALID_REQUEST_BODY,
+      HTTP_ERROR_MESSAGES.INVALID_REQUEST_BODY,
     );
   }
 
