@@ -4,6 +4,7 @@ import { useParams } from 'react-router';
 import { Button, Card, PageHeader } from '../../../shared/components';
 import type { TaskStatus } from '../../tasks/api/tasks.api';
 import { CreateTaskDialog } from '../../tasks/components/create-task-dialog';
+import { TaskDetailsDialog } from '../../tasks/components/task-details-dialog';
 import { tasksByProjectQueryOptions } from '../../tasks/queries/tasks.queries';
 import { BoardColumn } from '../components/board-column';
 import { BoardSkeleton } from '../components/board-skeleton';
@@ -22,6 +23,7 @@ const boardColumns = [
 export function ProjectBoardPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const tasksQuery = useQuery(tasksByProjectQueryOptions(projectId));
 
   return (
@@ -71,6 +73,7 @@ export function ProjectBoardPage() {
             {boardColumns.map((column) => (
               <BoardColumn
                 key={column.status}
+                onTaskSelect={setSelectedTaskId}
                 tasks={tasksQuery.data.filter(
                   (task) => task.status === column.status,
                 )}
@@ -86,6 +89,12 @@ export function ProjectBoardPage() {
         onClose={() => setIsCreateTaskDialogOpen(false)}
         open={isCreateTaskDialogOpen}
         projectId={projectId}
+      />
+
+      <TaskDetailsDialog
+        onClose={() => setSelectedTaskId(null)}
+        projectId={projectId}
+        taskId={selectedTaskId}
       />
     </main>
   );

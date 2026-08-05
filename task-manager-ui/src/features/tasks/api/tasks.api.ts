@@ -18,7 +18,7 @@ const listTasksResponseSchema = z.object({
   tasks: z.array(taskSchema),
 });
 
-const createTaskResponseSchema = z.object({
+const taskResponseSchema = z.object({
   task: taskSchema,
 });
 
@@ -43,8 +43,20 @@ export async function createTask({
     {
       method: 'POST',
       json: body,
-      responseSchema: createTaskResponseSchema,
+      responseSchema: taskResponseSchema,
     },
+  );
+
+  return response.task;
+}
+
+export async function getTask(
+  projectId: string,
+  taskId: string,
+): Promise<Task> {
+  const response = await httpClient.request(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
+    { responseSchema: taskResponseSchema },
   );
 
   return response.task;

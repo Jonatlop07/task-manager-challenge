@@ -6,9 +6,15 @@ export type BoardColumnProps = Readonly<{
   title: string;
   tone: 'neutral' | 'info' | 'success';
   tasks: readonly Task[];
+  onTaskSelect: (taskId: string) => void;
 }>;
 
-export function BoardColumn({ tasks, title, tone }: BoardColumnProps) {
+export function BoardColumn({
+  onTaskSelect,
+  tasks,
+  title,
+  tone,
+}: BoardColumnProps) {
   return (
     <Card className={styles.column}>
       <header className={styles.columnHeader}>
@@ -22,7 +28,12 @@ export function BoardColumn({ tasks, title, tone }: BoardColumnProps) {
         <ul className={styles.taskList}>
           {tasks.map((task) => (
             <li key={task.id}>
-              <article className={styles.taskCard}>
+              <button
+                aria-label={`Ver detalles de ${task.title}`}
+                className={styles.taskCard}
+                onClick={() => onTaskSelect(task.id)}
+                type="button"
+              >
                 <div className={styles.taskHeader}>
                   <h3>{task.title}</h3>
                   <Badge tone={priorityTone[task.priority]}>
@@ -40,7 +51,9 @@ export function BoardColumn({ tasks, title, tone }: BoardColumnProps) {
                     Vence el {formatDueDate(task.dueDate)}
                   </p>
                 ) : null}
-              </article>
+
+                <span className={styles.viewDetails}>Ver detalles</span>
+              </button>
             </li>
           ))}
         </ul>
