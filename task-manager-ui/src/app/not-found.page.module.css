@@ -1,0 +1,26 @@
+.page {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.link {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-sm);
+  color: white;
+  background: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--color-primary-hover);
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

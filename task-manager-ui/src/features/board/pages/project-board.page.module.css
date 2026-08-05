@@ -1,0 +1,36 @@
+.page {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(16rem, 1fr));
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.column {
+  min-height: 20rem;
+  padding: var(--space-4);
+  background: var(--color-surface-subtle);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.columnHeader h2 {
+  font-size: var(--font-size-sm);
+}
+
+.columnEmpty {
+  margin-top: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}

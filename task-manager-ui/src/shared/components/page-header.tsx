@@ -1,0 +1,29 @@
+import type { ReactNode } from 'react';
+import styles from './page-header.module.css';
+
+export type PageHeaderProps = Readonly<{
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  actions?: ReactNode;
+}>;
+
+export function PageHeader({
+  actions,
+  description,
+  eyebrow,
+  title,
+}: PageHeaderProps) {
+  return (
+    <header className={styles.header}>
+      <div className={styles.copy}>
+        {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
+        <h1 className={styles.title}>{title}</h1>
+        {description ? (
+          <p className={styles.description}>{description}</p>
+        ) : null}
+      </div>
+      {actions ? <div className={styles.actions}>{actions}</div> : null}
+    </header>
+  );
+}
