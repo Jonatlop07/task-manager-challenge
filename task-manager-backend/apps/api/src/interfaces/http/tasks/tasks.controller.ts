@@ -15,6 +15,8 @@ import {
   CreateTaskUseCase,
   type CreateTaskResult,
   DeleteTaskUseCase,
+  GetTaskUseCase,
+  type GetTaskResult,
   ListTasksUseCase,
   type ListTasksResult,
   UpdateTaskUseCase,
@@ -43,6 +45,8 @@ export class TasksController {
     private readonly updateTaskUseCase: Pick<UpdateTaskUseCase, 'execute'>,
     @Inject(API_PROVIDER_TOKENS.DELETE_TASK_USE_CASE)
     private readonly deleteTaskUseCase: Pick<DeleteTaskUseCase, 'execute'>,
+    @Inject(API_PROVIDER_TOKENS.GET_TASK_USE_CASE)
+    private readonly getTaskUseCase: Pick<GetTaskUseCase, 'execute'>,
   ) {}
 
   @Post()
@@ -105,6 +109,16 @@ export class TasksController {
     const parsedParams = parseTaskLifecycleParams(params);
 
     await this.deleteTaskUseCase.execute({
+      projectId: parsedParams.projectId,
+      taskId: parsedParams.taskId,
+    });
+  }
+
+  @Get(TASK_HTTP_ROUTES.TASK)
+  async getTask(@Param() params: unknown): Promise<GetTaskResult> {
+    const parsedParams = parseTaskLifecycleParams(params);
+
+    return this.getTaskUseCase.execute({
       projectId: parsedParams.projectId,
       taskId: parsedParams.taskId,
     });

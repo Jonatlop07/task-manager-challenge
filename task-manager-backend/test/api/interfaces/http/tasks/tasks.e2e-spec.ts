@@ -12,6 +12,7 @@ import { ERROR_CATEGORIES, ERROR_LAYERS } from '@shared/errors';
 import type {
   CreateTaskUseCase,
   DeleteTaskUseCase,
+  GetTaskUseCase,
   ListTasksUseCase,
   UpdateTaskUseCase,
 } from '@task/application';
@@ -40,6 +41,7 @@ describe('Tasks HTTP API', () => {
   let listTasks: jest.MockedFunction<ListTasksUseCase['execute']>;
   let updateTask: jest.MockedFunction<UpdateTaskUseCase['execute']>;
   let deleteTask: jest.MockedFunction<DeleteTaskUseCase['execute']>;
+  let getTask: jest.MockedFunction<GetTaskUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
@@ -48,6 +50,7 @@ describe('Tasks HTTP API', () => {
     listTasks = jest.fn();
     updateTask = jest.fn();
     deleteTask = jest.fn();
+    getTask = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [TasksController],
@@ -68,6 +71,10 @@ describe('Tasks HTTP API', () => {
           provide: API_PROVIDER_TOKENS.DELETE_TASK_USE_CASE,
           useValue: { execute: deleteTask },
         },
+        {
+          provide: API_PROVIDER_TOKENS.GET_TASK_USE_CASE,
+          useValue: { execute: getTask },
+        },
       ],
     }).compile();
 
@@ -82,6 +89,7 @@ describe('Tasks HTTP API', () => {
     listTasks.mockReset();
     updateTask.mockReset();
     deleteTask.mockReset();
+    getTask.mockReset();
   });
 
   afterAll(async () => {
@@ -457,6 +465,71 @@ describe('Tasks HTTP API', () => {
 
       const response = await request(server)
         .delete(`/projects/${projectId}/tasks/${task.id}`)
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code,
+          message,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
+    });
+  });
+
+  describe('GET /projects/:projectId/tasks/:taskId', () => {
+    it('responds with 200 and the requested task', async () => {
+      getTask.mockResolvedValue({ task });
+
+      const response = await request(server)
+        .get(`/projects/${projectId}/tasks/${task.id}`)
+        .expect(200);
+
+      expect(response.body).toEqual({ task });
+      expect(getTask).toHaveBeenCalledWith({
+        projectId,
+        taskId: task.id,
+      });
+    });
+
+    it.each([
+      {
+        scenario: 'project id is too long',
+        path: `/projects/${'a'.repeat(TASK_HTTP_LIMITS.PROJECT_ID_MAX_LENGTH + 1)}/tasks/${task.id}`,
+      },
+      {
+        scenario: 'task id is too long',
+        path: `/projects/${projectId}/tasks/${'a'.repeat(TASK_HTTP_LIMITS.TASK_ID_MAX_LENGTH + 1)}`,
+      },
+    ])('responds with 400 when the $scenario', async ({ path }) => {
+      const response = await request(server).get(path).expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(getTask).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {
+        scenario: 'project does not exist',
+        code: TASK_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+        message: TASK_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      },
+      {
+        scenario: 'task does not exist',
+        code: TASK_APPLICATION_ERROR_CODES.TASK_NOT_FOUND,
+        message: TASK_APPLICATION_ERROR_MESSAGES.TASK_NOT_FOUND,
+      },
+    ])('responds with 404 when the $scenario', async ({ code, message }) => {
+      getTask.mockRejectedValue(
+        new TaskApplicationError(code, message, {
+          category: ERROR_CATEGORIES.NOT_FOUND,
+        }),
+      );
+
+      const response = await request(server)
+        .get(`/projects/${projectId}/tasks/${task.id}`)
         .expect(404);
 
       expect(response.body).toEqual({
