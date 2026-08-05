@@ -1,1 +1,4 @@
+export * from './aggregates';
 export * from './enums';
+export * from './errors';
+export * from './value-objects';
