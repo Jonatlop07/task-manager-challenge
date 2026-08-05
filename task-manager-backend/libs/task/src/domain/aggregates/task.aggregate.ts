@@ -31,6 +31,14 @@ interface CreateTaskProperties {
   dueDate?: string | Date | null;
 }
 
+interface UpdateTaskProperties {
+  title?: string;
+  description?: string | null;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  dueDate?: string | Date | null;
+}
+
 export type TaskSnapshot = Readonly<{
   id: string;
   projectId: string;
@@ -72,6 +80,32 @@ export class Task {
       priority: snapshot.priority,
       dueDate: TaskDueDate.create(snapshot.dueDate),
     });
+  }
+
+  update(properties: UpdateTaskProperties): void {
+    if (properties.title !== undefined) {
+      this.properties.title = TaskTitle.create(properties.title);
+    }
+
+    if (properties.description !== undefined) {
+      this.properties.description = TaskDescription.create(
+        properties.description,
+      );
+    }
+
+    if (properties.status !== undefined) {
+      Task.assertStatus(properties.status);
+      this.properties.status = properties.status;
+    }
+
+    if (properties.priority !== undefined) {
+      Task.assertPriority(properties.priority);
+      this.properties.priority = properties.priority;
+    }
+
+    if (properties.dueDate !== undefined) {
+      this.properties.dueDate = TaskDueDate.create(properties.dueDate);
+    }
   }
 
   toSnapshot(): TaskSnapshot {
