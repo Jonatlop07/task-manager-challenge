@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 import { Button, Card, PageHeader } from '../../../shared/components';
-import type { TaskStatus } from '../../tasks/api/tasks.api';
+import type { Task, TaskStatus } from '../../tasks/api/tasks.api';
 import { CreateTaskDialog } from '../../tasks/components/create-task-dialog';
 import { TaskDetailsDialog } from '../../tasks/components/task-details-dialog';
+import { UpdateTaskDialog } from '../../tasks/components/update-task-dialog';
 import { tasksByProjectQueryOptions } from '../../tasks/queries/tasks.queries';
 import { BoardColumn } from '../components/board-column';
 import { BoardSkeleton } from '../components/board-skeleton';
@@ -24,6 +25,7 @@ export function ProjectBoardPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [taskToUpdate, setTaskToUpdate] = useState<Task | null>(null);
   const tasksQuery = useQuery(tasksByProjectQueryOptions(projectId));
 
   return (
@@ -93,8 +95,17 @@ export function ProjectBoardPage() {
 
       <TaskDetailsDialog
         onClose={() => setSelectedTaskId(null)}
+        onEdit={(task) => {
+          setSelectedTaskId(null);
+          setTaskToUpdate(task);
+        }}
         projectId={projectId}
         taskId={selectedTaskId}
+      />
+
+      <UpdateTaskDialog
+        onClose={() => setTaskToUpdate(null)}
+        task={taskToUpdate}
       />
     </main>
   );

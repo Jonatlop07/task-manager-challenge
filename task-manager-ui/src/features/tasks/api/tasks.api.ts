@@ -34,6 +34,16 @@ export type CreateTaskInput = Readonly<{
   dueDate?: string;
 }>;
 
+export type UpdateTaskInput = Readonly<{
+  projectId: string;
+  taskId: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string | null;
+}>;
+
 export async function createTask({
   projectId,
   ...body
@@ -69,4 +79,21 @@ export async function listTasks(projectId: string): Promise<readonly Task[]> {
   );
 
   return response.tasks;
+}
+
+export async function updateTask({
+  projectId,
+  taskId,
+  ...json
+}: UpdateTaskInput): Promise<Task> {
+  const response = await httpClient.request(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
+    {
+      method: 'PATCH',
+      json,
+      responseSchema: taskResponseSchema,
+    },
+  );
+
+  return response.task;
 }

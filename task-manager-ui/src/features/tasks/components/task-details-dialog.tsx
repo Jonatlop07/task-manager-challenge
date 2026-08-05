@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Button } from '../../../shared/components';
-import type { TaskPriority, TaskStatus } from '../api/tasks.api';
+import type { Task, TaskPriority, TaskStatus } from '../api/tasks.api';
 import { taskDetailsQueryOptions } from '../queries/tasks.queries';
 import dialogStyles from './create-task-dialog.module.css';
 import styles from './task-details-dialog.module.css';
@@ -10,10 +10,12 @@ export type TaskDetailsDialogProps = Readonly<{
   projectId: string;
   taskId: string | null;
   onClose: () => void;
+  onEdit: (task: Task) => void;
 }>;
 
 export function TaskDetailsDialog({
   onClose,
+  onEdit,
   projectId,
   taskId,
 }: TaskDetailsDialogProps) {
@@ -119,6 +121,11 @@ export function TaskDetailsDialog({
         </div>
 
         <footer className={dialogStyles.actions}>
+          {taskQuery.data ? (
+            <Button onClick={() => onEdit(taskQuery.data)} type="button">
+              Editar tarea
+            </Button>
+          ) : null}
           <Button onClick={onClose} type="button" variant="secondary">
             Cerrar
           </Button>
