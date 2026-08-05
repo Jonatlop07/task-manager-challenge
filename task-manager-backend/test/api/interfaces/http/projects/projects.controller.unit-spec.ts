@@ -1,5 +1,6 @@
 import type {
   CreateProjectUseCase,
+  DeleteProjectUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import { ProjectsController } from '@api/interfaces/http/projects/projects.controller';
@@ -23,6 +24,7 @@ describe('ProjectsController', () => {
 
   let execute: jest.MockedFunction<CreateProjectUseCase['execute']>;
   let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
+  let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
   let setStatus: jest.Mock;
   let response: Response;
   let controller: ProjectsController;
@@ -30,11 +32,13 @@ describe('ProjectsController', () => {
   beforeEach(() => {
     execute = jest.fn();
     updateProject = jest.fn();
+    deleteProject = jest.fn();
     setStatus = jest.fn();
     response = { status: setStatus } as unknown as Response;
     controller = new ProjectsController(
       { execute },
       { execute: updateProject },
+      { execute: deleteProject },
     );
   });
 
@@ -249,6 +253,47 @@ describe('ProjectsController', () => {
         { projectId: project.id },
         { name: project.name },
       );
+
+      await expect(execution).rejects.toBe(useCaseError);
+    });
+  });
+
+  describe('deleteProject', () => {
+    it('normalizes the project id and executes the use case', async () => {
+      deleteProject.mockResolvedValue(undefined);
+
+      const result = await controller.deleteProject({
+        projectId: `  ${project.id}  `,
+      });
+
+      expect(deleteProject).toHaveBeenCalledWith({ projectId: project.id });
+      expect(result).toBeUndefined();
+    });
+
+    it.each([
+      { scenario: 'missing', params: {} },
+      { scenario: 'blank', params: { projectId: '   ' } },
+      {
+        scenario: 'too long',
+        params: {
+          projectId: 'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1),
+        },
+      },
+    ])('rejects a $scenario project id', async ({ params }) => {
+      const execution = controller.deleteProject(params);
+
+      await expect(execution).rejects.toMatchObject({
+        code: HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
+        message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
+      });
+      expect(deleteProject).not.toHaveBeenCalled();
+    });
+
+    it('propagates deletion use case errors', async () => {
+      const useCaseError = new Error('Deletion failed');
+      deleteProject.mockRejectedValue(useCaseError);
+
+      const execution = controller.deleteProject({ projectId: project.id });
 
       await expect(execution).rejects.toBe(useCaseError);
     });

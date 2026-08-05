@@ -8,6 +8,7 @@ import { ProjectsController } from '@api/interfaces/http/projects/projects.contr
 import { PROJECT_HTTP_LIMITS } from '@api/interfaces/http/projects/projects-http.constants';
 import type {
   CreateProjectUseCase,
+  DeleteProjectUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import {
@@ -31,12 +32,14 @@ describe('Projects HTTP API', () => {
 
   let execute: jest.MockedFunction<CreateProjectUseCase['execute']>;
   let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
+  let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
   beforeAll(async () => {
     execute = jest.fn();
     updateProject = jest.fn();
+    deleteProject = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -48,6 +51,10 @@ describe('Projects HTTP API', () => {
         {
           provide: API_PROVIDER_TOKENS.UPDATE_PROJECT_USE_CASE,
           useValue: { execute: updateProject },
+        },
+        {
+          provide: API_PROVIDER_TOKENS.DELETE_PROJECT_USE_CASE,
+          useValue: { execute: deleteProject },
         },
       ],
     }).compile();
@@ -61,6 +68,7 @@ describe('Projects HTTP API', () => {
   beforeEach(() => {
     execute.mockReset();
     updateProject.mockReset();
+    deleteProject.mockReset();
   });
 
   afterAll(async () => {
@@ -234,6 +242,54 @@ describe('Projects HTTP API', () => {
       const response = await request(server)
         .patch(`/projects/${project.id}`)
         .send({ name: 'Project Borealis' })
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code: PROJECT_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          message: PROJECT_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
+    });
+  });
+
+  describe('DELETE /projects/:projectId', () => {
+    it('responds with 204 when the project is deleted', async () => {
+      deleteProject.mockResolvedValue(undefined);
+
+      const response = await request(server)
+        .delete(`/projects/${project.id}`)
+        .expect(204);
+
+      expect(response.text).toBe('');
+      expect(deleteProject).toHaveBeenCalledWith({ projectId: project.id });
+    });
+
+    it('responds with 400 when the project id is too long', async () => {
+      const response = await request(server)
+        .delete(
+          `/projects/${'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1)}`,
+        )
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(deleteProject).not.toHaveBeenCalled();
+    });
+
+    it('responds with 404 when the project does not exist', async () => {
+      deleteProject.mockRejectedValue(
+        new ProjectApplicationError(
+          PROJECT_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          PROJECT_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          { category: ERROR_CATEGORIES.NOT_FOUND },
+        ),
+      );
+
+      const response = await request(server)
+        .delete(`/projects/${project.id}`)
         .expect(404);
 
       expect(response.body).toEqual({

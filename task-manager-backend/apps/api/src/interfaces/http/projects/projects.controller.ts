@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Headers,
   HttpCode,
   Inject,
@@ -16,6 +17,7 @@ import {
 } from './projects-http.constants';
 import {
   CreateProjectUseCase,
+  DeleteProjectUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import type {
@@ -54,6 +56,11 @@ export class ProjectsController {
       UpdateProjectUseCase,
       'execute'
     >,
+    @Inject(API_PROVIDER_TOKENS.DELETE_PROJECT_USE_CASE)
+    private readonly deleteProjectUseCase: Pick<
+      DeleteProjectUseCase,
+      'execute'
+    >,
   ) {}
 
   @Post()
@@ -89,6 +96,16 @@ export class ProjectsController {
       projectId: parsedParams.projectId,
       name: request.name,
       description: request.description,
+    });
+  }
+
+  @Delete(PROJECT_HTTP_ROUTES.PROJECT)
+  @HttpCode(PROJECT_HTTP_RESPONSE_STATUSES.NO_CONTENT)
+  async deleteProject(@Param() params: unknown): Promise<void> {
+    const parsedParams = parseProjectLifecycleParams(params);
+
+    await this.deleteProjectUseCase.execute({
+      projectId: parsedParams.projectId,
     });
   }
 

@@ -12,6 +12,7 @@ export const PROJECT_HTTP_ROUTES = {
 export const PROJECT_HTTP_RESPONSE_STATUSES = {
   OK: 200,
   CREATED: 201,
+  NO_CONTENT: 204,
 } as const;
 
 export const PROJECT_HTTP_LIMITS = {
