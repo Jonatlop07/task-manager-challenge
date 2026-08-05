@@ -2,7 +2,10 @@ import {
   UpdateProjectUseCase,
   type ProjectUpdateStore,
 } from '@project/application';
-import { TypeOrmProjectUpdateStore } from '@project/infrastructure';
+import {
+  TypeOrmProjectQueryStore,
+  TypeOrmProjectUpdateStore,
+} from '@project/infrastructure';
 import type { DataSource } from 'typeorm';
 
 export type CreateApiUpdateProjectUseCaseInput = Readonly<{
@@ -18,5 +21,8 @@ export const createApiProjectUpdateStore = (
 export const createApiUpdateProjectUseCase = (
   input: CreateApiUpdateProjectUseCaseInput,
 ): UpdateProjectUseCase => {
-  return new UpdateProjectUseCase(createApiProjectUpdateStore(input));
+  return new UpdateProjectUseCase(
+    new TypeOrmProjectQueryStore(input.dataSource),
+    createApiProjectUpdateStore(input),
+  );
 };

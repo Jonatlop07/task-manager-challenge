@@ -3,7 +3,10 @@ import {
   PROJECT_APPLICATION_ERROR_MESSAGES,
   ProjectApplicationError,
 } from '@project/application/errors';
-import type { ProjectUpdateStore } from '@project/application/ports';
+import type {
+  ProjectQueryStore,
+  ProjectUpdateStore,
+} from '@project/application/ports';
 import { UpdateProjectUseCase } from '@project/application/use-cases';
 import type { ProjectSnapshot } from '@project/domain';
 import { ERROR_CATEGORIES } from '@shared/errors';
@@ -15,7 +18,7 @@ describe('UpdateProjectUseCase', () => {
     description: 'Internal planning',
   };
 
-  let findById: jest.MockedFunction<ProjectUpdateStore['findById']>;
+  let findById: jest.MockedFunction<ProjectQueryStore['findById']>;
   let update: jest.MockedFunction<ProjectUpdateStore['update']>;
   let useCase: UpdateProjectUseCase;
 
@@ -27,7 +30,7 @@ describe('UpdateProjectUseCase', () => {
         Parameters<ProjectUpdateStore['update']>
       >()
       .mockImplementation((project) => Promise.resolve(project));
-    useCase = new UpdateProjectUseCase({ findById, update });
+    useCase = new UpdateProjectUseCase({ findById }, { update });
   });
 
   it('updates and normalizes the project fields', async () => {

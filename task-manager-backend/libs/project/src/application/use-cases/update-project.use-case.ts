@@ -5,7 +5,7 @@ import {
   PROJECT_APPLICATION_ERROR_MESSAGES,
   ProjectApplicationError,
 } from '../errors';
-import type { ProjectUpdateStore } from '../ports';
+import type { ProjectQueryStore, ProjectUpdateStore } from '../ports';
 
 export type UpdateProjectCommand = Readonly<{
   projectId: string;
@@ -18,13 +18,16 @@ export type UpdateProjectResult = Readonly<{
 }>;
 
 export class UpdateProjectUseCase {
-  constructor(private readonly store: ProjectUpdateStore) {}
+  constructor(
+    private readonly queryStore: ProjectQueryStore,
+    private readonly updateStore: ProjectUpdateStore,
+  ) {}
 
   async execute(command: UpdateProjectCommand): Promise<UpdateProjectResult> {
     this.assertHasChanges(command);
 
     const projectId = ProjectId.create(command.projectId);
-    const snapshot = await this.store.findById(projectId.value);
+    const snapshot = await this.queryStore.findById(projectId.value);
 
     if (!snapshot) {
       throw this.projectNotFoundError();
@@ -36,7 +39,7 @@ export class UpdateProjectUseCase {
       description: command.description,
     });
 
-    const updatedProject = await this.store.update(project.toSnapshot());
+    const updatedProject = await this.updateStore.update(project.toSnapshot());
 
     if (!updatedProject) {
       throw this.projectNotFoundError();

@@ -10,7 +10,6 @@ describe('TypeOrmProjectUpdateStore', () => {
     description: 'Internal planning',
   };
 
-  let findOneBy: jest.MockedFunction<Repository<ProjectOrmEntity>['findOneBy']>;
   let updateProject: jest.MockedFunction<
     Repository<ProjectOrmEntity>['update']
   >;
@@ -18,11 +17,9 @@ describe('TypeOrmProjectUpdateStore', () => {
   let store: TypeOrmProjectUpdateStore;
 
   beforeEach(() => {
-    findOneBy = jest.fn();
     updateProject = jest.fn();
 
     const projectRepository = {
-      findOneBy,
       update: updateProject,
     };
 
@@ -33,24 +30,6 @@ describe('TypeOrmProjectUpdateStore', () => {
     } as unknown as DataSource;
 
     store = new TypeOrmProjectUpdateStore(dataSource);
-  });
-
-  describe('findById', () => {
-    it('returns a project snapshot when the project exists', async () => {
-      findOneBy.mockResolvedValue(createProjectEntity(project));
-
-      const result = await store.findById(project.id);
-
-      expect(getRepository).toHaveBeenCalledWith(ProjectOrmEntity);
-      expect(findOneBy).toHaveBeenCalledWith({ id: project.id });
-      expect(result).toEqual(project);
-    });
-
-    it('returns null when the project does not exist', async () => {
-      findOneBy.mockResolvedValue(null);
-
-      await expect(store.findById('missing-project')).resolves.toBeNull();
-    });
   });
 
   describe('update', () => {
@@ -109,12 +88,4 @@ describe('TypeOrmProjectUpdateStore', () => {
       },
     );
   });
-
-  function createProjectEntity(snapshot: ProjectSnapshot): ProjectOrmEntity {
-    return Object.assign(new ProjectOrmEntity(), {
-      ...snapshot,
-      createdAt: new Date('2026-08-04T00:00:00.000Z'),
-      updatedAt: new Date('2026-08-05T00:00:00.000Z'),
-    });
-  }
 });
