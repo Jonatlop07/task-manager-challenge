@@ -5,14 +5,23 @@ import styles from './project-list.module.css';
 
 export type ProjectListProps = Readonly<{
   projects: readonly Project[];
+  onEdit: (project: Project) => void;
 }>;
 
-export function ProjectList({ projects }: ProjectListProps) {
+export function ProjectList({ onEdit, projects }: ProjectListProps) {
   return (
     <ul className={styles.grid}>
       {projects.map((project) => (
         <li key={project.id}>
           <Card className={styles.card}>
+            <button
+              aria-label={`Editar ${project.name}`}
+              className={styles.editButton}
+              onClick={() => onEdit(project)}
+              type="button"
+            >
+              Editar
+            </button>
             <Link className={styles.link} to={`/projects/${project.id}/board`}>
               <div className={styles.identity}>
                 <span className={styles.mark} aria-hidden="true">

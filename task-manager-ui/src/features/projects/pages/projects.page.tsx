@@ -9,12 +9,15 @@ import {
 import { CreateProjectDialog } from '../components/create-project-dialog';
 import { ProjectList } from '../components/project-list';
 import { ProjectsSkeleton } from '../components/projects-skeleton';
+import { UpdateProjectDialog } from '../components/update-project-dialog';
+import type { Project } from '../api/projects.api';
 import { projectsQueryOptions } from '../queries/projects.queries';
 import styles from './projects.page.module.css';
 
 export function ProjectsPage() {
   const projectsQuery = useQuery(projectsQueryOptions());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
 
   return (
     <main className={styles.page}>
@@ -82,13 +85,20 @@ export function ProjectsPage() {
         ) : null}
 
         {projectsQuery.data && projectsQuery.data.length > 0 ? (
-          <ProjectList projects={projectsQuery.data} />
+          <ProjectList
+            onEdit={setProjectToEdit}
+            projects={projectsQuery.data}
+          />
         ) : null}
       </section>
 
       <CreateProjectDialog
         onClose={() => setIsCreateDialogOpen(false)}
         open={isCreateDialogOpen}
+      />
+      <UpdateProjectDialog
+        onClose={() => setProjectToEdit(null)}
+        project={projectToEdit}
       />
     </main>
   );

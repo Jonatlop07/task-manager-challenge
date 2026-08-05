@@ -24,6 +24,12 @@ export type CreateProjectInput = Readonly<{
   idempotencyKey: string;
 }>;
 
+export type UpdateProjectInput = Readonly<{
+  projectId: string;
+  name: string;
+  description: string | null;
+}>;
+
 export async function listProjects(): Promise<readonly Project[]> {
   const response = await httpClient.request('/projects', {
     responseSchema: listProjectsResponseSchema,
@@ -46,6 +52,24 @@ export async function createProject(
     },
     responseSchema: createProjectResponseSchema,
   });
+
+  return response.project;
+}
+
+export async function updateProject(
+  input: UpdateProjectInput,
+): Promise<Project> {
+  const response = await httpClient.request(
+    `/projects/${encodeURIComponent(input.projectId)}`,
+    {
+      method: 'PATCH',
+      json: {
+        name: input.name,
+        description: input.description,
+      },
+      responseSchema: z.object({ project: projectSchema }),
+    },
+  );
 
   return response.project;
 }

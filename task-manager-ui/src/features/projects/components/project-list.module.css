@@ -8,12 +8,40 @@
 }
 
 .card {
+  position: relative;
   height: 100%;
   overflow: hidden;
   transition:
     border-color var(--transition-fast),
     box-shadow var(--transition-fast),
     transform var(--transition-fast);
+}
+
+.editButton {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-4);
+  right: var(--space-4);
+  min-height: 2rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+}
+
+.editButton:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.editButton:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .card:hover {
@@ -59,6 +87,7 @@
 
 .copy {
   min-width: 0;
+  padding-right: 3.5rem;
 }
 
 .name {
