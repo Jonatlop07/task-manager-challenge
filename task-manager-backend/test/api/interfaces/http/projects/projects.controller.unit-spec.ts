@@ -1,6 +1,11 @@
 import type { CreateProjectUseCase } from '@project/application';
 import { ProjectsController } from '@api/interfaces/http/projects/projects.controller';
 import { PROJECT_HTTP_RESPONSE_STATUSES } from '@api/interfaces/http/projects/projects-http.constants';
+import {
+  HTTP_ERROR_CODES,
+  HTTP_ERROR_MESSAGES,
+} from '@api/interfaces/http/errors/http-error.constants';
+import { ApiInterfaceError } from '@api/interfaces/http/errors/api-interface.error';
 import type { Response } from 'express';
 
 describe('ProjectsController', () => {
@@ -54,4 +59,92 @@ describe('ProjectsController', () => {
       expect(result).toEqual(useCaseResult);
     },
   );
+
+  it.each([
+    { scenario: 'a missing name', body: {} },
+    { scenario: 'a blank name', body: { name: '   ' } },
+    { scenario: 'a non-string name', body: { name: 123 } },
+    {
+      scenario: 'a name longer than 256 characters',
+      body: { name: 'a'.repeat(257) },
+    },
+    {
+      scenario: 'a blank description',
+      body: { name: project.name, description: '   ' },
+    },
+  ])('rejects $scenario', async ({ body }) => {
+    const execution = controller.createProject(
+      body,
+      { 'idempotency-key': 'create-project-atlas' },
+      response,
+    );
+
+    await expect(execution).rejects.toMatchObject({
+      code: HTTP_ERROR_CODES.INVALID_REQUEST_BODY,
+      message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_BODY,
+    });
+    expect(execute).not.toHaveBeenCalled();
+    expect(setStatus).not.toHaveBeenCalled();
+  });
+
+  it('normalizes the request body before executing the use case', async () => {
+    const useCaseResult = { project, idempotentReplay: false };
+    execute.mockResolvedValue(useCaseResult);
+
+    await controller.createProject(
+      {
+        name: `  ${project.name}  `,
+        description: '  Internal planning  ',
+      },
+      { 'idempotency-key': '  create-project-atlas  ' },
+      response,
+    );
+
+    expect(execute).toHaveBeenCalledWith({
+      idempotencyKey: 'create-project-atlas',
+      name: project.name,
+      description: 'Internal planning',
+    });
+  });
+
+  it('rejects an idempotency key longer than the supported limit', async () => {
+    const execution = controller.createProject(
+      { name: project.name },
+      { 'idempotency-key': 'a'.repeat(129) },
+      response,
+    );
+
+    await expect(execution).rejects.toBeInstanceOf(ApiInterfaceError);
+    expect(execute).not.toHaveBeenCalled();
+    expect(setStatus).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { scenario: 'missing', headers: {} },
+    { scenario: 'blank', headers: { 'idempotency-key': '   ' } },
+  ])('rejects a $scenario idempotency key', async ({ headers }) => {
+    const execution = controller.createProject(
+      { name: project.name },
+      headers,
+      response,
+    );
+
+    await expect(execution).rejects.toBeInstanceOf(ApiInterfaceError);
+    expect(execute).not.toHaveBeenCalled();
+    expect(setStatus).not.toHaveBeenCalled();
+  });
+
+  it('propagates use case errors without setting a success status', async () => {
+    const useCaseError = new Error('Use case failed');
+    execute.mockRejectedValue(useCaseError);
+
+    const execution = controller.createProject(
+      { name: project.name },
+      { 'idempotency-key': 'create-project-atlas' },
+      response,
+    );
+
+    await expect(execution).rejects.toBe(useCaseError);
+    expect(setStatus).not.toHaveBeenCalled();
+  });
 });
