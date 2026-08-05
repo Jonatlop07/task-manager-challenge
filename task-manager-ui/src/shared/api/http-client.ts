@@ -19,19 +19,25 @@ const CLIENT_ERROR_CODES = {
   NETWORK_ERROR: 'client.network-error',
 } as const;
 
-export type ResponseParser<TResponse> = (value: unknown) => TResponse;
-
-export type HttpRequestOptions<TResponse> = Omit<
-  RequestInit,
-  'body' | 'method'
-> &
+type BaseHttpRequestOptions = Omit<RequestInit, 'body' | 'method'> &
   Readonly<{
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     json?: unknown;
-    parse?: ResponseParser<TResponse>;
   }>;
 
+export type HttpRequestOptions<TResponse> = BaseHttpRequestOptions &
+  Readonly<{
+    responseSchema: z.ZodType<TResponse>;
+  }>;
+
+export type HttpRequestVoidOptions = BaseHttpRequestOptions;
+
 type Fetcher = typeof fetch;
+
+type HttpResponse = Readonly<{
+  response: Response;
+  body: unknown;
+}>;
 
 export class HttpClient {
   private readonly baseUrl: string;
@@ -42,14 +48,55 @@ export class HttpClient {
     this.fetcher = fetcher;
   }
 
-  async request<TResponse = void>(
+  async request<TResponse>(
     path: string,
-    options: HttpRequestOptions<TResponse> = {},
+    options: HttpRequestOptions<TResponse>,
   ): Promise<TResponse> {
-    const headers = new Headers(options.headers);
+    const { response, body } = await this.execute(path, options);
+
+    try {
+      return options.responseSchema.parse(body);
+    } catch (cause) {
+      throw new ApiError({
+        code: CLIENT_ERROR_CODES.INVALID_RESPONSE,
+        message: 'The API response does not match the expected contract.',
+        status: response.status,
+        retryable: false,
+        cause,
+      });
+    }
+  }
+
+  async requestVoid(
+    path: string,
+    options: HttpRequestVoidOptions = {},
+  ): Promise<void> {
+    const { response, body } = await this.execute(path, options);
+
+    if (body !== undefined) {
+      throw new ApiError({
+        code: CLIENT_ERROR_CODES.INVALID_RESPONSE,
+        message: 'The API returned content for an empty response.',
+        status: response.status,
+        retryable: false,
+      });
+    }
+  }
+
+  private async execute(
+    path: string,
+    options: BaseHttpRequestOptions,
+  ): Promise<HttpResponse> {
+    const {
+      headers: inputHeaders,
+      json,
+      method = 'GET',
+      ...requestInit
+    } = options;
+    const headers = new Headers(inputHeaders);
     headers.set('Accept', 'application/json');
 
-    if (options.json !== undefined) {
+    if (json !== undefined) {
       headers.set('Content-Type', 'application/json');
     }
 
@@ -57,11 +104,10 @@ export class HttpClient {
 
     try {
       response = await this.fetcher(this.resolveUrl(path), {
-        ...options,
-        method: options.method ?? 'GET',
+        ...requestInit,
+        method,
         headers,
-        body:
-          options.json === undefined ? undefined : JSON.stringify(options.json),
+        body: json === undefined ? undefined : JSON.stringify(json),
       });
     } catch (cause) {
       throw new ApiError({
@@ -72,27 +118,13 @@ export class HttpClient {
       });
     }
 
-    const responseBody = await this.readResponseBody(response);
+    const body = await this.readResponseBody(response);
 
     if (!response.ok) {
-      throw this.createHttpError(response, responseBody);
+      throw this.createHttpError(response, body);
     }
 
-    if (!options.parse) {
-      return responseBody as TResponse;
-    }
-
-    try {
-      return options.parse(responseBody);
-    } catch (cause) {
-      throw new ApiError({
-        code: CLIENT_ERROR_CODES.INVALID_RESPONSE,
-        message: 'The API response does not match the expected contract.',
-        status: response.status,
-        retryable: false,
-        cause,
-      });
-    }
+    return { response, body };
   }
 
   private resolveUrl(path: string): string {
