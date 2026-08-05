@@ -14,7 +14,7 @@ import {
 } from '../../constants';
 
 @Entity({ name: TASK_TABLE_NAME })
-@Index('idx_tasks_project_status_priority', ['projectId', 'status', 'priority'])
+@Index(`${TASK_TABLE_NAME}_project_status_priority_idx`, ['projectId', 'status', 'priority'])
 export class TaskOrmEntity {
   @PrimaryColumn({
     name: 'id',
