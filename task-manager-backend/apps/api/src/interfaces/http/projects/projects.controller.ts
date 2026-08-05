@@ -39,7 +39,7 @@ export class ProjectsController {
 
   @Post()
   @HttpCode(PROJECT_HTTP_RESPONSE_STATUSES.CREATED)
-  async createOrder(
+  async createProject(
     @Body() body: unknown,
     @Headers() headers: HeaderMap,
   ): Promise<CreateProjectHttpResult> {
