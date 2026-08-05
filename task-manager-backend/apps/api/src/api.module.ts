@@ -8,7 +8,9 @@ import { createApiUpdateProjectUseCase } from './composition/projects/api-update
 import { createApiDeleteProjectUseCase } from './composition/projects/api-delete-project-use-case.factory';
 import { createApiGetProjectUseCase } from './composition/projects/api-get-project-use-case.factory';
 import { createApiListProjectsUseCase } from './composition/projects/api-list-projects-use-case.factory';
+import { createApiCreateTaskUseCase } from './composition/tasks/api-create-task-use-case.factory';
 import { ProjectsController } from './interfaces/http/projects/projects.controller';
+import { TasksController } from './interfaces/http/tasks/tasks.controller';
 import {
   ProjectIdempotencyRecordOrmEntity,
   ProjectOrmEntity,
@@ -43,7 +45,7 @@ import { DataSource } from 'typeorm';
       TaskOrmEntity,
     ]),
   ],
-  controllers: [ProjectsController],
+  controllers: [ProjectsController, TasksController],
   providers: [
     {
       provide: API_PROVIDER_TOKENS.CREATE_PROJECT_USE_CASE,
@@ -74,6 +76,12 @@ import { DataSource } from 'typeorm';
       inject: [DataSource],
       useFactory: (dataSource: DataSource) =>
         createApiListProjectsUseCase({ dataSource }),
+    },
+    {
+      provide: API_PROVIDER_TOKENS.CREATE_TASK_USE_CASE,
+      inject: [DataSource],
+      useFactory: (dataSource: DataSource) =>
+        createApiCreateTaskUseCase({ dataSource }),
     },
   ],
 })
