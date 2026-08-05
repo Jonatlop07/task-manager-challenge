@@ -6,31 +6,50 @@
 .board {
   display: grid;
   grid-template-columns: repeat(3, minmax(16rem, 1fr));
+  padding-bottom: var(--space-2);
   gap: var(--space-4);
   overflow-x: auto;
-  padding-bottom: var(--space-2);
 }
 
-.column {
-  min-height: 20rem;
-  padding: var(--space-4);
-  background: var(--color-surface-subtle);
-}
-
-.columnHeader {
-  display: flex;
+.feedbackCard {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  padding: var(--space-5);
+  gap: var(--space-4);
 }
 
-.columnHeader h2 {
-  font-size: var(--font-size-sm);
+.feedbackIcon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  font-weight: 800;
+  place-items: center;
 }
 
-.columnEmpty {
-  margin-top: var(--space-8);
+.feedbackCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.feedbackCopy h2 {
+  font-size: var(--font-size-md);
+}
+
+.feedbackCopy p {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  text-align: center;
+}
+
+@media (width <= 40rem) {
+  .feedbackCard {
+    grid-template-columns: auto 1fr;
+  }
+
+  .feedbackCard button {
+    grid-column: 1 / -1;
+  }
 }

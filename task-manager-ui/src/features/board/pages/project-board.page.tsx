@@ -1,40 +1,98 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
-import { Badge, Card, PageHeader } from '../../../shared/components';
+import { Button, Card, PageHeader } from '../../../shared/components';
+import type { TaskStatus } from '../../tasks/api/tasks.api';
+import { CreateTaskDialog } from '../../tasks/components/create-task-dialog';
+import { tasksByProjectQueryOptions } from '../../tasks/queries/tasks.queries';
+import { BoardColumn } from '../components/board-column';
+import { BoardSkeleton } from '../components/board-skeleton';
 import styles from './project-board.page.module.css';
 
+const boardColumns = [
+  { status: 'pending', title: 'Por hacer', tone: 'neutral' },
+  { status: 'in-progress', title: 'En progreso', tone: 'info' },
+  { status: 'completed', title: 'Finalizado', tone: 'success' },
+] as const satisfies readonly {
+  status: TaskStatus;
+  title: string;
+  tone: 'neutral' | 'info' | 'success';
+}[];
+
 export function ProjectBoardPage() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const { projectId = '' } = useParams<{ projectId: string }>();
+  const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
+  const tasksQuery = useQuery(tasksByProjectQueryOptions(projectId));
 
   return (
     <main className={styles.page}>
       <PageHeader
         eyebrow="Proyecto"
         title="Tablero"
-        description={`Proyecto ${projectId ?? ''}`}
+        description={
+          tasksQuery.data
+            ? formatTaskCount(tasksQuery.data.length)
+            : `Proyecto ${projectId}`
+        }
+        actions={
+          <Button onClick={() => setIsCreateTaskDialogOpen(true)}>
+            Nueva tarea
+          </Button>
+        }
       />
 
-      <div className={styles.board}>
-        <BoardColumn title="Por hacer" tone="neutral" />
-        <BoardColumn title="En progreso" tone="info" />
-        <BoardColumn title="Finalizado" tone="success" />
-      </div>
+      <section
+        aria-busy={tasksQuery.isPending}
+        aria-label="Tareas del proyecto"
+      >
+        {tasksQuery.isPending ? <BoardSkeleton /> : null}
+
+        {tasksQuery.isError ? (
+          <Card className={styles.feedbackCard} role="alert">
+            <div className={styles.feedbackIcon} aria-hidden="true">
+              !
+            </div>
+            <div className={styles.feedbackCopy}>
+              <h2>No pudimos cargar las tareas</h2>
+              <p>Revisa tu conexión e inténtalo nuevamente.</p>
+            </div>
+            <Button
+              disabled={tasksQuery.isFetching}
+              onClick={() => void tasksQuery.refetch()}
+              variant="secondary"
+            >
+              {tasksQuery.isFetching ? 'Reintentando…' : 'Reintentar'}
+            </Button>
+          </Card>
+        ) : null}
+
+        {tasksQuery.data ? (
+          <div className={styles.board}>
+            {boardColumns.map((column) => (
+              <BoardColumn
+                key={column.status}
+                tasks={tasksQuery.data.filter(
+                  (task) => task.status === column.status,
+                )}
+                title={column.title}
+                tone={column.tone}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <CreateTaskDialog
+        onClose={() => setIsCreateTaskDialogOpen(false)}
+        open={isCreateTaskDialogOpen}
+        projectId={projectId}
+      />
     </main>
   );
 }
 
-type BoardColumnProps = Readonly<{
-  title: string;
-  tone: 'neutral' | 'info' | 'success';
-}>;
-
-function BoardColumn({ title, tone }: BoardColumnProps) {
-  return (
-    <Card className={styles.column}>
-      <header className={styles.columnHeader}>
-        <h2>{title}</h2>
-        <Badge tone={tone}>0</Badge>
-      </header>
-      <p className={styles.columnEmpty}>No hay tareas en esta columna.</p>
-    </Card>
-  );
+function formatTaskCount(count: number): string {
+  return count === 1
+    ? '1 tarea en el proyecto'
+    : `${count} tareas en el proyecto`;
 }
