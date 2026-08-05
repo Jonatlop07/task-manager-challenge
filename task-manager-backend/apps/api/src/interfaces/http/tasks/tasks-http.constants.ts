@@ -13,4 +13,5 @@ export const TASK_HTTP_ROUTES = {
 export const TASK_HTTP_RESPONSE_STATUSES = {
   OK: 200,
   CREATED: 201,
+  NO_CONTENT: 204,
 } as const;

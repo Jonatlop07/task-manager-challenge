@@ -11,6 +11,7 @@ import { createApiListProjectsUseCase } from './composition/projects/api-list-pr
 import { createApiCreateTaskUseCase } from './composition/tasks/api-create-task-use-case.factory';
 import { createApiListTasksUseCase } from './composition/tasks/api-list-tasks-use-case.factory';
 import { createApiUpdateTaskUseCase } from './composition/tasks/api-update-task-use-case.factory';
+import { createApiDeleteTaskUseCase } from './composition/tasks/api-delete-task-use-case.factory';
 import { ProjectsController } from './interfaces/http/projects/projects.controller';
 import { TasksController } from './interfaces/http/tasks/tasks.controller';
 import {
@@ -96,6 +97,12 @@ import { DataSource } from 'typeorm';
       inject: [DataSource],
       useFactory: (dataSource: DataSource) =>
         createApiUpdateTaskUseCase({ dataSource }),
+    },
+    {
+      provide: API_PROVIDER_TOKENS.DELETE_TASK_USE_CASE,
+      inject: [DataSource],
+      useFactory: (dataSource: DataSource) =>
+        createApiDeleteTaskUseCase({ dataSource }),
     },
   ],
 })

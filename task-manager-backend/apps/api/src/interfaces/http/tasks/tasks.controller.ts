@@ -2,6 +2,7 @@ import { API_PROVIDER_TOKENS } from '@api/api-provider-tokens';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
@@ -13,6 +14,7 @@ import {
 import {
   CreateTaskUseCase,
   type CreateTaskResult,
+  DeleteTaskUseCase,
   ListTasksUseCase,
   type ListTasksResult,
   UpdateTaskUseCase,
@@ -39,6 +41,8 @@ export class TasksController {
     private readonly listTasksUseCase: Pick<ListTasksUseCase, 'execute'>,
     @Inject(API_PROVIDER_TOKENS.UPDATE_TASK_USE_CASE)
     private readonly updateTaskUseCase: Pick<UpdateTaskUseCase, 'execute'>,
+    @Inject(API_PROVIDER_TOKENS.DELETE_TASK_USE_CASE)
+    private readonly deleteTaskUseCase: Pick<DeleteTaskUseCase, 'execute'>,
   ) {}
 
   @Post()
@@ -92,6 +96,17 @@ export class TasksController {
       status: request.status,
       priority: request.priority,
       dueDate: request.dueDate,
+    });
+  }
+
+  @Delete(TASK_HTTP_ROUTES.TASK)
+  @HttpCode(TASK_HTTP_RESPONSE_STATUSES.NO_CONTENT)
+  async deleteTask(@Param() params: unknown): Promise<void> {
+    const parsedParams = parseTaskLifecycleParams(params);
+
+    await this.deleteTaskUseCase.execute({
+      projectId: parsedParams.projectId,
+      taskId: parsedParams.taskId,
     });
   }
 }
