@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -5,6 +6,7 @@ import {
   EmptyState,
   PageHeader,
 } from '../../../shared/components';
+import { CreateProjectDialog } from '../components/create-project-dialog';
 import { ProjectList } from '../components/project-list';
 import { ProjectsSkeleton } from '../components/projects-skeleton';
 import { projectsQueryOptions } from '../queries/projects.queries';
@@ -12,10 +14,16 @@ import styles from './projects.page.module.css';
 
 export function ProjectsPage() {
   const projectsQuery = useQuery(projectsQueryOptions());
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   return (
     <main className={styles.page}>
       <PageHeader
+        actions={
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            Nuevo proyecto
+          </Button>
+        }
         eyebrow="Espacio de trabajo"
         title="Proyectos"
         description="Organiza el trabajo y entra al tablero de cada iniciativa."
@@ -62,6 +70,11 @@ export function ProjectsPage() {
         {projectsQuery.data?.length === 0 ? (
           <Card>
             <EmptyState
+              action={
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  Crear proyecto
+                </Button>
+              }
               title="Todavía no hay proyectos"
               description="Crea tu primer proyecto para comenzar a organizar tareas."
             />
@@ -72,6 +85,11 @@ export function ProjectsPage() {
           <ProjectList projects={projectsQuery.data} />
         ) : null}
       </section>
+
+      <CreateProjectDialog
+        onClose={() => setIsCreateDialogOpen(false)}
+        open={isCreateDialogOpen}
+      />
     </main>
   );
 }
