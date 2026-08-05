@@ -13,6 +13,7 @@ import {
   ProjectIdempotencyRecordOrmEntity,
   ProjectOrmEntity,
 } from '@project/infrastructure';
+import { TaskOrmEntity } from '@task/infrastructure';
 import { DataSource } from 'typeorm';
 
 @Module({
@@ -39,6 +40,7 @@ import { DataSource } from 'typeorm';
     TypeOrmModule.forFeature([
       ProjectOrmEntity,
       ProjectIdempotencyRecordOrmEntity,
+      TaskOrmEntity,
     ]),
   ],
   controllers: [ProjectsController],
