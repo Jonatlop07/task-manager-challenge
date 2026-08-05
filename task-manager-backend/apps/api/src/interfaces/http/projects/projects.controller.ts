@@ -20,12 +20,14 @@ import {
   CreateProjectUseCase,
   DeleteProjectUseCase,
   GetProjectUseCase,
+  ListProjectsUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import type {
   CreateProjectCommand,
   CreateProjectResult,
   GetProjectResult,
+  ListProjectsResult,
   UpdateProjectResult,
 } from '@project/application';
 import {
@@ -46,6 +48,7 @@ type HeaderMap = ApiHttpHeaderMap;
 type CreateProjectHttpResult = CreateProjectResult;
 type UpdateProjectHttpResult = UpdateProjectResult;
 type GetProjectHttpResult = GetProjectResult;
+type ListProjectsHttpResult = ListProjectsResult;
 
 @Controller(PROJECT_HTTP_ROUTES.PROJECTS)
 export class ProjectsController {
@@ -67,6 +70,8 @@ export class ProjectsController {
     >,
     @Inject(API_PROVIDER_TOKENS.GET_PROJECT_USE_CASE)
     private readonly getProjectUseCase: Pick<GetProjectUseCase, 'execute'>,
+    @Inject(API_PROVIDER_TOKENS.LIST_PROJECTS_USE_CASE)
+    private readonly listProjectsUseCase: Pick<ListProjectsUseCase, 'execute'>,
   ) {}
 
   @Post()
@@ -122,6 +127,11 @@ export class ProjectsController {
     return this.getProjectUseCase.execute({
       projectId: parsedParams.projectId,
     });
+  }
+
+  @Get()
+  async listProjects(): Promise<ListProjectsHttpResult> {
+    return this.listProjectsUseCase.execute();
   }
 
   private toCommand(

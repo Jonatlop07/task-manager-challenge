@@ -10,6 +10,7 @@ import type {
   CreateProjectUseCase,
   DeleteProjectUseCase,
   GetProjectUseCase,
+  ListProjectsUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import {
@@ -35,6 +36,7 @@ describe('Projects HTTP API', () => {
   let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
   let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
   let getProject: jest.MockedFunction<GetProjectUseCase['execute']>;
+  let listProjects: jest.MockedFunction<ListProjectsUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
@@ -43,6 +45,7 @@ describe('Projects HTTP API', () => {
     updateProject = jest.fn();
     deleteProject = jest.fn();
     getProject = jest.fn();
+    listProjects = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -63,6 +66,10 @@ describe('Projects HTTP API', () => {
           provide: API_PROVIDER_TOKENS.GET_PROJECT_USE_CASE,
           useValue: { execute: getProject },
         },
+        {
+          provide: API_PROVIDER_TOKENS.LIST_PROJECTS_USE_CASE,
+          useValue: { execute: listProjects },
+        },
       ],
     }).compile();
 
@@ -77,6 +84,7 @@ describe('Projects HTTP API', () => {
     updateProject.mockReset();
     deleteProject.mockReset();
     getProject.mockReset();
+    listProjects.mockReset();
   });
 
   afterAll(async () => {
@@ -355,6 +363,33 @@ describe('Projects HTTP API', () => {
           retryable: false,
         },
       });
+    });
+  });
+
+  describe('GET /projects', () => {
+    it('responds with 200 and the projects', async () => {
+      const projects = [
+        project,
+        {
+          id: 'project-456',
+          name: 'Project Borealis',
+          description: 'Delivery planning',
+        },
+      ];
+      listProjects.mockResolvedValue({ projects });
+
+      const response = await request(server).get('/projects').expect(200);
+
+      expect(response.body).toEqual({ projects });
+      expect(listProjects).toHaveBeenCalledTimes(1);
+    });
+
+    it('responds with an empty collection when no projects exist', async () => {
+      listProjects.mockResolvedValue({ projects: [] });
+
+      const response = await request(server).get('/projects').expect(200);
+
+      expect(response.body).toEqual({ projects: [] });
     });
   });
 

@@ -2,6 +2,7 @@ import type {
   CreateProjectUseCase,
   DeleteProjectUseCase,
   GetProjectUseCase,
+  ListProjectsUseCase,
   UpdateProjectUseCase,
 } from '@project/application';
 import { ProjectsController } from '@api/interfaces/http/projects/projects.controller';
@@ -27,6 +28,7 @@ describe('ProjectsController', () => {
   let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
   let deleteProject: jest.MockedFunction<DeleteProjectUseCase['execute']>;
   let getProject: jest.MockedFunction<GetProjectUseCase['execute']>;
+  let listProjects: jest.MockedFunction<ListProjectsUseCase['execute']>;
   let setStatus: jest.Mock;
   let response: Response;
   let controller: ProjectsController;
@@ -36,6 +38,7 @@ describe('ProjectsController', () => {
     updateProject = jest.fn();
     deleteProject = jest.fn();
     getProject = jest.fn();
+    listProjects = jest.fn();
     setStatus = jest.fn();
     response = { status: setStatus } as unknown as Response;
     controller = new ProjectsController(
@@ -43,6 +46,7 @@ describe('ProjectsController', () => {
       { execute: updateProject },
       { execute: deleteProject },
       { execute: getProject },
+      { execute: listProjects },
     );
   });
 
@@ -341,6 +345,33 @@ describe('ProjectsController', () => {
       const execution = controller.getProject({ projectId: project.id });
 
       await expect(execution).rejects.toBe(useCaseError);
+    });
+  });
+
+  describe('listProjects', () => {
+    it('returns the projects from the use case', async () => {
+      const projects = [project];
+      listProjects.mockResolvedValue({ projects });
+
+      const result = await controller.listProjects();
+
+      expect(listProjects).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ projects });
+    });
+
+    it('returns an empty collection', async () => {
+      listProjects.mockResolvedValue({ projects: [] });
+
+      await expect(controller.listProjects()).resolves.toEqual({
+        projects: [],
+      });
+    });
+
+    it('propagates list use case errors', async () => {
+      const useCaseError = new Error('List failed');
+      listProjects.mockRejectedValue(useCaseError);
+
+      await expect(controller.listProjects()).rejects.toBe(useCaseError);
     });
   });
 });
