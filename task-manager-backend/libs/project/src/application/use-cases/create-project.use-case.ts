@@ -4,6 +4,10 @@ import { IdGenerator } from "@shared/identity";
 import { PROJECT_APPLICATION_ERROR_CODES, PROJECT_APPLICATION_ERROR_MESSAGES, ProjectApplicationError } from "../errors";
 import { ERROR_CATEGORIES } from "@shared/errors";
 
+export const CREATE_PROJECT_LIMITS = {
+  IDEMPOTENCY_KEY_MAX_LENGTH: 128,
+} as const;
+
 export type CreateProjectCommand = Readonly<{
   idempotencyKey: string;
   name: string;

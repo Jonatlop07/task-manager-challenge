@@ -1,0 +1,3 @@
+export const API_PROVIDER_TOKENS = {
+  CREATE_PROJECT_USE_CASE: Symbol('CREATE_PROJECT_USE_CASE'),
+} as const;
