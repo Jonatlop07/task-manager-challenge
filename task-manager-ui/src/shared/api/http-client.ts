@@ -43,19 +43,20 @@ export class HttpClient {
   private readonly baseUrl: string;
   private readonly fetcher: Fetcher;
 
-  constructor(baseUrl: string, fetcher: Fetcher = fetch) {
+  constructor(baseUrl: string, fetcher?: Fetcher) {
     this.baseUrl = baseUrl;
-    this.fetcher = fetcher;
+    this.fetcher = fetcher ?? globalThis.fetch.bind(globalThis);
   }
 
   async request<TResponse>(
     path: string,
     options: HttpRequestOptions<TResponse>,
   ): Promise<TResponse> {
-    const { response, body } = await this.execute(path, options);
+    const { responseSchema, ...requestOptions } = options;
+    const { response, body } = await this.execute(path, requestOptions);
 
     try {
-      return options.responseSchema.parse(body);
+      return responseSchema.parse(body);
     } catch (cause) {
       throw new ApiError({
         code: CLIENT_ERROR_CODES.INVALID_RESPONSE,

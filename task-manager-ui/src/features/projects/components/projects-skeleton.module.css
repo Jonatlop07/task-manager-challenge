@@ -1,0 +1,85 @@
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.card {
+  display: flex;
+  min-height: 12rem;
+  padding: var(--space-5);
+  gap: var(--space-4);
+}
+
+.mark,
+.title,
+.description {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-subtle) 25%,
+    var(--color-border) 50%,
+    var(--color-surface-subtle) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+}
+
+.copy {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.title {
+  width: 55%;
+  height: 1rem;
+}
+
+.description {
+  width: 90%;
+  height: 2.5rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (width <= 64rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 40rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark,
+  .title,
+  .description {
+    animation: none;
+  }
+}
