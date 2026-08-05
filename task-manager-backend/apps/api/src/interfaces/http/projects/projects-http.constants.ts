@@ -6,9 +6,14 @@ export const PROJECT_HTTP_HEADERS = {
 
 export const PROJECT_HTTP_ROUTES = {
   PROJECTS: 'projects',
+  PROJECT: ':projectId',
 } as const;
 
 export const PROJECT_HTTP_RESPONSE_STATUSES = {
   OK: 200,
   CREATED: 201,
+} as const;
+
+export const PROJECT_HTTP_LIMITS = {
+  ID_MAX_LENGTH: 64,
 } as const;

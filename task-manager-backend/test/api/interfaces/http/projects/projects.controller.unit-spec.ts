@@ -1,6 +1,12 @@
-import type { CreateProjectUseCase } from '@project/application';
+import type {
+  CreateProjectUseCase,
+  UpdateProjectUseCase,
+} from '@project/application';
 import { ProjectsController } from '@api/interfaces/http/projects/projects.controller';
-import { PROJECT_HTTP_RESPONSE_STATUSES } from '@api/interfaces/http/projects/projects-http.constants';
+import {
+  PROJECT_HTTP_LIMITS,
+  PROJECT_HTTP_RESPONSE_STATUSES,
+} from '@api/interfaces/http/projects/projects-http.constants';
 import {
   HTTP_ERROR_CODES,
   HTTP_ERROR_MESSAGES,
@@ -16,15 +22,20 @@ describe('ProjectsController', () => {
   };
 
   let execute: jest.MockedFunction<CreateProjectUseCase['execute']>;
+  let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
   let setStatus: jest.Mock;
   let response: Response;
   let controller: ProjectsController;
 
   beforeEach(() => {
     execute = jest.fn();
+    updateProject = jest.fn();
     setStatus = jest.fn();
     response = { status: setStatus } as unknown as Response;
-    controller = new ProjectsController({ execute });
+    controller = new ProjectsController(
+      { execute },
+      { execute: updateProject },
+    );
   });
 
   it.each([
@@ -146,5 +157,100 @@ describe('ProjectsController', () => {
 
     await expect(execution).rejects.toBe(useCaseError);
     expect(setStatus).not.toHaveBeenCalled();
+  });
+
+  describe('updateProject', () => {
+    it('normalizes the request and returns the updated project', async () => {
+      const updatedProject = {
+        ...project,
+        name: 'Project Borealis',
+        description: 'Delivery planning',
+      };
+      updateProject.mockResolvedValue({ project: updatedProject });
+
+      const result = await controller.updateProject(
+        { projectId: project.id },
+        {
+          name: '  Project Borealis  ',
+          description: '  Delivery planning  ',
+        },
+      );
+
+      expect(updateProject).toHaveBeenCalledWith({
+        projectId: project.id,
+        name: updatedProject.name,
+        description: updatedProject.description,
+      });
+      expect(result).toEqual({ project: updatedProject });
+    });
+
+    it('allows clearing the project description', async () => {
+      updateProject.mockResolvedValue({ project });
+
+      await controller.updateProject(
+        { projectId: project.id },
+        { description: null },
+      );
+
+      expect(updateProject).toHaveBeenCalledWith({
+        projectId: project.id,
+        name: undefined,
+        description: null,
+      });
+    });
+
+    it.each([
+      { scenario: 'an empty body', body: {} },
+      { scenario: 'a blank name', body: { name: '   ' } },
+      {
+        scenario: 'a name longer than 256 characters',
+        body: { name: 'a'.repeat(257) },
+      },
+      { scenario: 'a blank description', body: { description: '   ' } },
+    ])('rejects $scenario', async ({ body }) => {
+      const execution = controller.updateProject(
+        { projectId: project.id },
+        body,
+      );
+
+      await expect(execution).rejects.toMatchObject({
+        code: HTTP_ERROR_CODES.INVALID_REQUEST_BODY,
+        message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_BODY,
+      });
+      expect(updateProject).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      { scenario: 'missing', params: {} },
+      { scenario: 'blank', params: { projectId: '   ' } },
+      {
+        scenario: 'too long',
+        params: {
+          projectId: 'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1),
+        },
+      },
+    ])('rejects a $scenario project id', async ({ params }) => {
+      const execution = controller.updateProject(params, {
+        name: project.name,
+      });
+
+      await expect(execution).rejects.toMatchObject({
+        code: HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
+        message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
+      });
+      expect(updateProject).not.toHaveBeenCalled();
+    });
+
+    it('propagates update use case errors', async () => {
+      const useCaseError = new Error('Update failed');
+      updateProject.mockRejectedValue(useCaseError);
+
+      const execution = controller.updateProject(
+        { projectId: project.id },
+        { name: project.name },
+      );
+
+      await expect(execution).rejects.toBe(useCaseError);
+    });
   });
 });

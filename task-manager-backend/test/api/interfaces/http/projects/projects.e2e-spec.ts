@@ -5,7 +5,11 @@ import {
   HTTP_ERROR_MESSAGES,
 } from '@api/interfaces/http/errors/http-error.constants';
 import { ProjectsController } from '@api/interfaces/http/projects/projects.controller';
-import type { CreateProjectUseCase } from '@project/application';
+import { PROJECT_HTTP_LIMITS } from '@api/interfaces/http/projects/projects-http.constants';
+import type {
+  CreateProjectUseCase,
+  UpdateProjectUseCase,
+} from '@project/application';
 import {
   PROJECT_APPLICATION_ERROR_CODES,
   PROJECT_APPLICATION_ERROR_MESSAGES,
@@ -17,7 +21,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
-describe('POST /projects', () => {
+describe('Projects HTTP API', () => {
   const idempotencyKey = 'create-project-atlas';
   const project = {
     id: 'project-123',
@@ -26,11 +30,13 @@ describe('POST /projects', () => {
   };
 
   let execute: jest.MockedFunction<CreateProjectUseCase['execute']>;
+  let updateProject: jest.MockedFunction<UpdateProjectUseCase['execute']>;
   let app: INestApplication;
   let server: Server;
 
   beforeAll(async () => {
     execute = jest.fn();
+    updateProject = jest.fn();
 
     const testingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -38,6 +44,10 @@ describe('POST /projects', () => {
         {
           provide: API_PROVIDER_TOKENS.CREATE_PROJECT_USE_CASE,
           useValue: { execute },
+        },
+        {
+          provide: API_PROVIDER_TOKENS.UPDATE_PROJECT_USE_CASE,
+          useValue: { execute: updateProject },
         },
       ],
     }).compile();
@@ -50,6 +60,7 @@ describe('POST /projects', () => {
 
   beforeEach(() => {
     execute.mockReset();
+    updateProject.mockReset();
   });
 
   afterAll(async () => {
@@ -166,11 +177,94 @@ describe('POST /projects', () => {
     );
   });
 
+  describe('PATCH /projects/:projectId', () => {
+    it('responds with 200 and the updated project', async () => {
+      const updatedProject = {
+        ...project,
+        name: 'Project Borealis',
+        description: 'Delivery planning',
+      };
+      updateProject.mockResolvedValue({ project: updatedProject });
+
+      const response = await request(server)
+        .patch(`/projects/${project.id}`)
+        .send({
+          name: '  Project Borealis  ',
+          description: '  Delivery planning  ',
+        })
+        .expect(200);
+
+      expect(response.body).toEqual({ project: updatedProject });
+      expect(updateProject).toHaveBeenCalledWith({
+        projectId: project.id,
+        name: updatedProject.name,
+        description: updatedProject.description,
+      });
+    });
+
+    it('responds with 400 when no fields are provided', async () => {
+      const response = await request(server)
+        .patch(`/projects/${project.id}`)
+        .send({})
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestErrorResponse());
+      expect(updateProject).not.toHaveBeenCalled();
+    });
+
+    it('responds with 400 when the project id is too long', async () => {
+      const response = await request(server)
+        .patch(`/projects/${'a'.repeat(PROJECT_HTTP_LIMITS.ID_MAX_LENGTH + 1)}`)
+        .send({ name: 'Project Borealis' })
+        .expect(400);
+
+      expect(response.body).toEqual(invalidRequestParamErrorResponse());
+      expect(updateProject).not.toHaveBeenCalled();
+    });
+
+    it('responds with 404 when the project does not exist', async () => {
+      updateProject.mockRejectedValue(
+        new ProjectApplicationError(
+          PROJECT_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          PROJECT_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          { category: ERROR_CATEGORIES.NOT_FOUND },
+        ),
+      );
+
+      const response = await request(server)
+        .patch(`/projects/${project.id}`)
+        .send({ name: 'Project Borealis' })
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: {
+          code: PROJECT_APPLICATION_ERROR_CODES.PROJECT_NOT_FOUND,
+          message: PROJECT_APPLICATION_ERROR_MESSAGES.PROJECT_NOT_FOUND,
+          layer: ERROR_LAYERS.APPLICATION,
+          category: ERROR_CATEGORIES.NOT_FOUND,
+          retryable: false,
+        },
+      });
+    });
+  });
+
   function invalidRequestErrorResponse(): object {
     return {
       error: {
         code: HTTP_ERROR_CODES.INVALID_REQUEST_BODY,
         message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_BODY,
+        layer: ERROR_LAYERS.INTERFACE,
+        category: ERROR_CATEGORIES.VALIDATION,
+        retryable: false,
+      },
+    };
+  }
+
+  function invalidRequestParamErrorResponse(): object {
+    return {
+      error: {
+        code: HTTP_ERROR_CODES.INVALID_REQUEST_PARAM,
+        message: HTTP_ERROR_MESSAGES.INVALID_REQUEST_PARAM,
         layer: ERROR_LAYERS.INTERFACE,
         category: ERROR_CATEGORIES.VALIDATION,
         retryable: false,
