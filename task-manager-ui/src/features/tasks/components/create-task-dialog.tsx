@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, TextField } from '../../../shared/components';
 import { createTask, type Task, type TaskPriority } from '../api/tasks.api';
 import { taskQueryKeys } from '../queries/tasks.queries';
+import { projectQueryKeys } from '../../projects/queries/projects.queries';
 import styles from './create-task-dialog.module.css';
 
 export type CreateTaskDialogProps = Readonly<{
@@ -33,6 +34,9 @@ export function CreateTaskDialog({
       );
       void queryClient.invalidateQueries({
         queryKey: taskQueryKeys.byProject(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: projectQueryKeys.summary(projectId),
       });
       resetAndClose();
     },

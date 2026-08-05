@@ -9,6 +9,7 @@ import {
   type UpdateTaskInput,
 } from '../api/tasks.api';
 import { taskQueryKeys } from '../queries/tasks.queries';
+import { projectQueryKeys } from '../../projects/queries/projects.queries';
 import styles from './create-task-dialog.module.css';
 
 export type UpdateTaskDialogProps = Readonly<{
@@ -42,6 +43,9 @@ export function UpdateTaskDialog({ onClose, task }: UpdateTaskDialogProps) {
       );
       void queryClient.invalidateQueries({
         queryKey: taskQueryKeys.byProject(updatedTask.projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: projectQueryKeys.summary(updatedTask.projectId),
       });
       closeDialog();
     },

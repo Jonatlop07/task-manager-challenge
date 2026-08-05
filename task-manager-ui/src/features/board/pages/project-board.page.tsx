@@ -7,8 +7,11 @@ import { CreateTaskDialog } from '../../tasks/components/create-task-dialog';
 import { TaskDetailsDialog } from '../../tasks/components/task-details-dialog';
 import { UpdateTaskDialog } from '../../tasks/components/update-task-dialog';
 import { tasksByProjectQueryOptions } from '../../tasks/queries/tasks.queries';
+import { projectSummaryQueryOptions } from '../../projects/queries/projects.queries';
 import { BoardColumn } from '../components/board-column';
 import { BoardSkeleton } from '../components/board-skeleton';
+import { ProjectSummary } from '../components/project-summary';
+import { ProjectSummarySkeleton } from '../components/project-summary-skeleton';
 import styles from './project-board.page.module.css';
 
 const boardColumns = [
@@ -27,6 +30,7 @@ export function ProjectBoardPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [taskToUpdate, setTaskToUpdate] = useState<Task | null>(null);
   const tasksQuery = useQuery(tasksByProjectQueryOptions(projectId));
+  const summaryQuery = useQuery(projectSummaryQueryOptions(projectId));
 
   return (
     <main className={styles.page}>
@@ -44,6 +48,30 @@ export function ProjectBoardPage() {
           </Button>
         }
       />
+
+      <section
+        aria-busy={summaryQuery.isPending}
+        aria-label="Resumen del proyecto"
+      >
+        {summaryQuery.isPending ? <ProjectSummarySkeleton /> : null}
+
+        {summaryQuery.isError ? (
+          <Card className={styles.summaryError} role="alert">
+            <p>No pudimos cargar el resumen del proyecto.</p>
+            <Button
+              disabled={summaryQuery.isFetching}
+              onClick={() => void summaryQuery.refetch()}
+              variant="secondary"
+            >
+              {summaryQuery.isFetching ? 'Reintentando…' : 'Reintentar'}
+            </Button>
+          </Card>
+        ) : null}
+
+        {summaryQuery.data ? (
+          <ProjectSummary summary={summaryQuery.data} />
+        ) : null}
+      </section>
 
       <section
         aria-busy={tasksQuery.isPending}

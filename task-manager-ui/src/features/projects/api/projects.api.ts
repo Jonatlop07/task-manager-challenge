@@ -16,7 +16,24 @@ const createProjectResponseSchema = z.object({
   idempotentReplay: z.boolean(),
 });
 
+const projectSummarySchema = z.object({
+  total: z.number().int().nonnegative(),
+  byStatus: z.object({
+    pending: z.number().int().nonnegative(),
+    inProgress: z.number().int().nonnegative(),
+    completed: z.number().int().nonnegative(),
+  }),
+  byPriority: z.object({
+    low: z.number().int().nonnegative(),
+    medium: z.number().int().nonnegative(),
+    high: z.number().int().nonnegative(),
+  }),
+  overdue: z.number().int().nonnegative(),
+  completionPercentage: z.number().min(0).max(100),
+});
+
 export type Project = z.infer<typeof projectSchema>;
+export type ProjectSummary = z.infer<typeof projectSummarySchema>;
 
 export type CreateProjectInput = Readonly<{
   name: string;
@@ -78,4 +95,13 @@ export async function deleteProject(projectId: string): Promise<void> {
   await httpClient.requestVoid(`/projects/${encodeURIComponent(projectId)}`, {
     method: 'DELETE',
   });
+}
+
+export async function getProjectSummary(
+  projectId: string,
+): Promise<ProjectSummary> {
+  return httpClient.request(
+    `/projects/${encodeURIComponent(projectId)}/summary`,
+    { responseSchema: projectSummarySchema },
+  );
 }

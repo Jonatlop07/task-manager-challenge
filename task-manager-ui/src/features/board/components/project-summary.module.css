@@ -1,0 +1,144 @@
+.summary {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.metric {
+  display: grid;
+  min-height: 6.5rem;
+  align-content: space-between;
+  padding: var(--space-4);
+  gap: var(--space-2);
+}
+
+.metric span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.metric strong {
+  color: var(--color-text);
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+}
+
+.metric[data-tone='primary'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.metric[data-tone='success'] {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.metric[data-tone='danger'] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.metric[data-tone='primary'] strong {
+  color: var(--color-primary);
+}
+
+.metric[data-tone='success'] strong {
+  color: var(--color-success);
+}
+
+.metric[data-tone='danger'] strong {
+  color: var(--color-danger);
+}
+
+.breakdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.breakdown {
+  display: grid;
+  padding: var(--space-4);
+  gap: var(--space-3);
+}
+
+.breakdown h2 {
+  font-size: var(--font-size-sm);
+}
+
+.breakdown dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.breakdown dl div {
+  display: grid;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  gap: var(--space-1);
+}
+
+.breakdown dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.breakdown dd {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.progress {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+}
+
+.progressHeader span {
+  color: var(--color-text-muted);
+}
+
+.progressTrack {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+
+.progressValue {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width var(--transition-fast);
+}
+
+@media (width <= 48rem) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .breakdowns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 28rem) {
+  .breakdown dl {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,40 @@
+.skeleton {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  display: grid;
+  min-height: 6.5rem;
+  align-content: space-between;
+  padding: var(--space-4);
+}
+
+.card span {
+  height: 0.875rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-border);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.card span:first-child {
+  width: 55%;
+}
+
+.card span:last-child {
+  width: 35%;
+  height: 1.75rem;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (width <= 48rem) {
+  .skeleton {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

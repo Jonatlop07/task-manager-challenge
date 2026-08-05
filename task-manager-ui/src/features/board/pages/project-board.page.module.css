@@ -19,6 +19,19 @@
   gap: var(--space-4);
 }
 
+.summaryError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  color: var(--color-danger);
+  gap: var(--space-4);
+}
+
+.summaryError p {
+  font-size: var(--font-size-sm);
+}
+
 .feedbackIcon {
   display: grid;
   width: 2.5rem;
@@ -45,6 +58,11 @@
 }
 
 @media (width <= 40rem) {
+  .summaryError {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .feedbackCard {
     grid-template-columns: auto 1fr;
   }
