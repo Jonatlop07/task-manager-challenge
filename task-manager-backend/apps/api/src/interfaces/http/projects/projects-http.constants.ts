@@ -9,5 +9,6 @@ export const PROJECT_HTTP_ROUTES = {
 } as const;
 
 export const PROJECT_HTTP_RESPONSE_STATUSES = {
+  OK: 200,
   CREATED: 201,
 } as const;

@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Headers,
-  Inject,
-} from '@nestjs/common';
+import { Body, Controller, Headers, Inject, Post, Res } from '@nestjs/common';
 import {
   PROJECT_HTTP_HEADERS,
   PROJECT_HTTP_RESPONSE_STATUSES,
@@ -26,6 +19,7 @@ import {
 } from './projects-http.schema';
 import { assertProjectIdempotencyKeyHeader } from './projects-http.idempotency-key';
 import { API_PROVIDER_TOKENS } from '@api/api-provider-tokens';
+import type { Response } from 'express';
 
 type HeaderMap = ApiHttpHeaderMap;
 type CreateProjectHttpResult = CreateProjectResult;
@@ -34,17 +28,30 @@ type CreateProjectHttpResult = CreateProjectResult;
 export class ProjectsController {
   constructor(
     @Inject(API_PROVIDER_TOKENS.CREATE_PROJECT_USE_CASE)
-    private readonly createProject: Pick<CreateProjectUseCase, 'execute'>,
+    private readonly createProjectUseCase: Pick<
+      CreateProjectUseCase,
+      'execute'
+    >,
   ) {}
 
   @Post()
-  @HttpCode(PROJECT_HTTP_RESPONSE_STATUSES.CREATED)
   async createProject(
     @Body() body: unknown,
     @Headers() headers: HeaderMap,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<CreateProjectHttpResult> {
     const request = parseCreateProjectHttpRequest(body);
-    return this.createProject.execute(this.toCommand(request, headers));
+    const result = await this.createProjectUseCase.execute(
+      this.toCommand(request, headers),
+    );
+
+    response.status(
+      result.idempotentReplay
+        ? PROJECT_HTTP_RESPONSE_STATUSES.OK
+        : PROJECT_HTTP_RESPONSE_STATUSES.CREATED,
+    );
+
+    return result;
   }
 
   private toCommand(
