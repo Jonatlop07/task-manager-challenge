@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { Button, Card, PageHeader } from '../../../shared/components';
-import type { Task, TaskStatus } from '../../tasks/api/tasks.api';
+import {
+  taskPrioritySchema,
+  taskStatusSchema,
+  type ListTasksFilters,
+  type Task,
+  type TaskStatus,
+} from '../../tasks/api/tasks.api';
 import { CreateTaskDialog } from '../../tasks/components/create-task-dialog';
 import { TaskDetailsDialog } from '../../tasks/components/task-details-dialog';
 import { UpdateTaskDialog } from '../../tasks/components/update-task-dialog';
@@ -12,6 +18,7 @@ import { BoardColumn } from '../components/board-column';
 import { BoardSkeleton } from '../components/board-skeleton';
 import { ProjectSummary } from '../components/project-summary';
 import { ProjectSummarySkeleton } from '../components/project-summary-skeleton';
+import { TaskFilters } from '../components/task-filters';
 import styles from './project-board.page.module.css';
 
 const boardColumns = [
@@ -26,10 +33,12 @@ const boardColumns = [
 
 export function ProjectBoardPage() {
   const { projectId = '' } = useParams<{ projectId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [taskToUpdate, setTaskToUpdate] = useState<Task | null>(null);
-  const tasksQuery = useQuery(tasksByProjectQueryOptions(projectId));
+  const filters = parseTaskFilters(searchParams);
+  const tasksQuery = useQuery(tasksByProjectQueryOptions(projectId, filters));
   const summaryQuery = useQuery(projectSummaryQueryOptions(projectId));
 
   return (
@@ -38,8 +47,8 @@ export function ProjectBoardPage() {
         eyebrow="Proyecto"
         title="Tablero"
         description={
-          tasksQuery.data
-            ? formatTaskCount(tasksQuery.data.length)
+          summaryQuery.data
+            ? formatTaskCount(summaryQuery.data.total)
             : `Proyecto ${projectId}`
         }
         actions={
@@ -72,6 +81,15 @@ export function ProjectBoardPage() {
           <ProjectSummary summary={summaryQuery.data} />
         ) : null}
       </section>
+
+      <TaskFilters
+        filters={filters}
+        isFetching={tasksQuery.isFetching}
+        onChange={(nextFilters) =>
+          setSearchParams(toSearchParams(nextFilters), { replace: true })
+        }
+        resultCount={tasksQuery.data?.length}
+      />
 
       <section
         aria-busy={tasksQuery.isPending}
@@ -137,6 +155,30 @@ export function ProjectBoardPage() {
       />
     </main>
   );
+}
+
+function parseTaskFilters(searchParams: URLSearchParams): ListTasksFilters {
+  const parsedStatus = taskStatusSchema.safeParse(searchParams.get('status'));
+  const parsedPriority = taskPrioritySchema.safeParse(
+    searchParams.get('priority'),
+  );
+  const search = searchParams.get('search')?.trim() || undefined;
+
+  return {
+    status: parsedStatus.success ? parsedStatus.data : undefined,
+    priority: parsedPriority.success ? parsedPriority.data : undefined,
+    search,
+  };
+}
+
+function toSearchParams(filters: ListTasksFilters): URLSearchParams {
+  const searchParams = new URLSearchParams();
+
+  if (filters.status) searchParams.set('status', filters.status);
+  if (filters.priority) searchParams.set('priority', filters.priority);
+  if (filters.search) searchParams.set('search', filters.search);
+
+  return searchParams;
 }
 
 function formatTaskCount(count: number): string {

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { httpClient } from '../../../shared/api/http-client';
 
-const taskStatusSchema = z.enum(['pending', 'in-progress', 'completed']);
-const taskPrioritySchema = z.enum(['low', 'medium', 'high']);
+export const taskStatusSchema = z.enum(['pending', 'in-progress', 'completed']);
+export const taskPrioritySchema = z.enum(['low', 'medium', 'high']);
 
 const taskSchema = z.object({
   id: z.string().min(1),
@@ -32,6 +32,12 @@ export type CreateTaskInput = Readonly<{
   description?: string;
   priority: TaskPriority;
   dueDate?: string;
+}>;
+
+export type ListTasksFilters = Readonly<{
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  search?: string;
 }>;
 
 export type UpdateTaskInput = Readonly<{
@@ -72,9 +78,19 @@ export async function getTask(
   return response.task;
 }
 
-export async function listTasks(projectId: string): Promise<readonly Task[]> {
+export async function listTasks(
+  projectId: string,
+  filters: ListTasksFilters = {},
+): Promise<readonly Task[]> {
+  const searchParams = new URLSearchParams();
+
+  if (filters.status) searchParams.set('status', filters.status);
+  if (filters.priority) searchParams.set('priority', filters.priority);
+  if (filters.search) searchParams.set('search', filters.search);
+
+  const query = searchParams.size > 0 ? `?${searchParams.toString()}` : '';
   const response = await httpClient.request(
-    `/projects/${encodeURIComponent(projectId)}/tasks`,
+    `/projects/${encodeURIComponent(projectId)}/tasks${query}`,
     { responseSchema: listTasksResponseSchema },
   );
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, TextField } from '../../../shared/components';
-import { createTask, type Task, type TaskPriority } from '../api/tasks.api';
+import { createTask, type TaskPriority } from '../api/tasks.api';
 import { taskQueryKeys } from '../queries/tasks.queries';
 import { projectQueryKeys } from '../../projects/queries/projects.queries';
 import styles from './create-task-dialog.module.css';
@@ -27,13 +27,9 @@ export function CreateTaskDialog({
 
   const createTaskMutation = useMutation({
     mutationFn: createTask,
-    onSuccess: (task) => {
-      queryClient.setQueryData<readonly Task[]>(
-        taskQueryKeys.byProject(projectId),
-        (currentTasks = []) => [...currentTasks, task],
-      );
+    onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: taskQueryKeys.byProject(projectId),
+        queryKey: taskQueryKeys.lists(projectId),
       });
       void queryClient.invalidateQueries({
         queryKey: projectQueryKeys.summary(projectId),

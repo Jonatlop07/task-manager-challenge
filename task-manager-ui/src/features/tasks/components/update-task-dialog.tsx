@@ -30,19 +30,12 @@ export function UpdateTaskDialog({ onClose, task }: UpdateTaskDialogProps) {
   const updateTaskMutation = useMutation({
     mutationFn: updateTask,
     onSuccess: (updatedTask) => {
-      queryClient.setQueryData<readonly Task[]>(
-        taskQueryKeys.byProject(updatedTask.projectId),
-        (currentTasks = []) =>
-          currentTasks.map((currentTask) =>
-            currentTask.id === updatedTask.id ? updatedTask : currentTask,
-          ),
-      );
       queryClient.setQueryData(
         taskQueryKeys.detail(updatedTask.projectId, updatedTask.id),
         updatedTask,
       );
       void queryClient.invalidateQueries({
-        queryKey: taskQueryKeys.byProject(updatedTask.projectId),
+        queryKey: taskQueryKeys.lists(updatedTask.projectId),
       });
       void queryClient.invalidateQueries({
         queryKey: projectQueryKeys.summary(updatedTask.projectId),
