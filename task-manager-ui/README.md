@@ -1,78 +1,85 @@
 # Task Manager UI
 
-Cliente web del gestor de proyectos y tareas. Está construido con React, Vite,
-TypeScript, React Router, TanStack Query y Zod.
+Web client for managing projects and tasks. It is built with React, Vite,
+TypeScript, React Router, TanStack Query, and Zod.
 
-## Requisitos
+## Live application
 
-- Node.js 22 o superior.
+[https://task-manager-ui-go-pass.onrender.com](https://task-manager-ui-go-pass.onrender.com)
+
+The API runs on Render's free tier, so the first request after a period of
+inactivity might take a few seconds while the service starts.
+
+## Requirements
+
+- Node.js 22 or later.
 - pnpm 9.
-- La API del proyecto ejecutándose localmente.
+- The project API running locally.
 
-## Ejecución local
+## Local setup
 
-1. Inicia primero el backend siguiendo su
-   [README](../task-manager-backend/README.md). La API debe estar disponible en
-   `http://localhost:3000` o `http://127.0.0.1:3000`.
+1. Start the backend first by following its
+   [README](../task-manager-backend/README.md). The API must be available at
+   `http://localhost:3000` or `http://127.0.0.1:3000`.
 
-2. En otra terminal, entra a la UI:
+2. In another terminal, enter the UI directory:
 
    ```bash
    cd task-manager-ui
    ```
 
-3. Instala las dependencias:
+3. Install dependencies:
 
    ```bash
    pnpm install --frozen-lockfile
    ```
 
-4. Crea la configuración local:
+4. Create the local configuration:
 
    ```bash
    cp .env.example .env.local
    ```
 
-   El archivo debe contener la URL pública de la API:
+   The file must contain the public API URL:
 
    ```dotenv
    VITE_API_URL=http://127.0.0.1:3000
    ```
 
-5. Inicia Vite:
+5. Start Vite:
 
    ```bash
    pnpm run dev
    ```
 
-6. Abre `http://127.0.0.1:5173/projects`.
+6. Open `http://127.0.0.1:5173/projects`.
 
-Si cambias el host o puerto de Vite, añade ese origen a `CORS_ORIGINS` en el
+If you change Vite's host or port, add that origin to `CORS_ORIGINS` in the
 backend.
 
-## Funcionalidades
+## Features
 
-- Listado, creación, edición y eliminación de proyectos.
-- Board Kanban por proyecto.
-- Creación, consulta y edición de tareas.
-- Filtros server-side por estado, prioridad y búsqueda.
-- Resumen con estado, prioridad, vencimientos y porcentaje de avance.
-- Estados de carga, error, vacío y reintento.
-- Validación de respuestas y errores HTTP con Zod.
+- Project listing, creation, editing, and deletion.
+- A Kanban board for each project.
+- Task creation, retrieval, and editing.
+- Server-side filters by status, priority, and search term.
+- A project summary with status, priority, overdue tasks, and completion rate.
+- Loading, error, empty, and retry states.
+- Response and HTTP error validation with Zod.
 
-## Rutas
+## Routes
 
-| Ruta                         | Vista                                          |
-| ---------------------------- | ---------------------------------------------- |
-| `/projects`                  | Listado y gestión de proyectos.                |
-| `/projects/:projectId/board` | Board, resumen, filtros y tareas del proyecto. |
-| `*`                          | Página no encontrada.                          |
+| Route                        | View                                        |
+| ---------------------------- | ------------------------------------------- |
+| `/projects`                  | Project listing and management.             |
+| `/projects/:projectId/board` | Project board, summary, filters, and tasks. |
+| `*`                          | Not-found page.                             |
 
-## Arquitectura interna
+## Internal architecture
 
-La UI está organizada por funcionalidades. Las páginas componen componentes y
-consumen opciones de consulta; el acceso HTTP y los contratos de datos quedan
-fuera de la capa visual.
+The UI is organized by feature. Pages compose components and consume query
+options, while HTTP access and data contracts remain outside the presentation
+layer.
 
 ```mermaid
 flowchart LR
@@ -86,47 +93,47 @@ flowchart LR
   Queries --> API["Feature API"]
   Mutations --> API
   API --> HttpClient["fetch httpClient"]
-  HttpClient --> Zod["Contratos Zod"]
+  HttpClient --> Zod["Zod contracts"]
   HttpClient --> Backend["Task Manager API"]
-  Shared["Componentes y tokens compartidos"] --> Pages
+  Shared["Shared components and design tokens"] --> Pages
   Shared --> Components
 ```
 
-Estructura principal:
+Main structure:
 
 ```text
 src/
-├── app/                  # Providers, router, layout y estilos globales
+├── app/                  # Providers, router, layout, and global styles
 ├── features/
-│   ├── projects/         # API, queries, páginas y diálogos de proyectos
-│   ├── tasks/            # API, queries y diálogos de tareas
-│   └── board/            # Kanban, filtros, indicadores y skeletons
+│   ├── projects/         # Project API, queries, pages, and dialogs
+│   ├── tasks/            # Task API, queries, and dialogs
+│   └── board/            # Kanban, filters, indicators, and skeletons
 └── shared/
-    ├── api/              # Cliente fetch, configuración y errores tipados
-    └── components/       # Componentes visuales reutilizables
+    ├── api/              # Fetch client, configuration, and typed errors
+    └── components/       # Reusable visual components
 ```
 
-### Flujo de datos
+### Data flow
 
-1. React Router resuelve la página y sus parámetros.
-2. La página construye las opciones de TanStack Query.
-3. La API de la funcionalidad llama al cliente HTTP sobre `fetch`.
-4. Zod valida el cuerpo antes de entregarlo a la UI.
-5. Las mutaciones actualizan o invalidan la caché correspondiente.
-6. Los filtros se conservan en la URL para permitir recarga y navegación.
+1. React Router resolves the page and its parameters.
+2. The page builds the TanStack Query options.
+3. The feature API calls the HTTP client built on `fetch`.
+4. Zod validates the response body before it reaches the UI.
+5. Mutations update or invalidate the relevant cache entries.
+6. Filters remain in the URL to support reloads and navigation.
 
-## Scripts útiles
+## Useful scripts
 
-| Comando            | Descripción                              |
-| ------------------ | ---------------------------------------- |
-| `pnpm run dev`     | Inicia Vite en desarrollo.               |
-| `pnpm run build`   | Comprueba TypeScript y genera `dist`.    |
-| `pnpm run preview` | Sirve localmente el build de producción. |
-| `pnpm run lint`    | Ejecuta Oxlint y comprueba Prettier.     |
-| `pnpm run format`  | Formatea el proyecto.                    |
+| Command            | Description                                 |
+| ------------------ | ------------------------------------------- |
+| `pnpm run dev`     | Starts Vite in development mode.            |
+| `pnpm run build`   | Checks TypeScript and generates `dist`.     |
+| `pnpm run preview` | Serves the production build locally.        |
+| `pnpm run lint`    | Runs Oxlint and checks Prettier formatting. |
+| `pnpm run format`  | Formats the project.                        |
 
-## Despliegue en Render
+## Render deployment
 
-El archivo [`../render.yaml`](../render.yaml) publica esta aplicación como sitio
-estático, configura `VITE_API_URL` y reescribe las rutas del navegador hacia
+The [`../render.yaml`](../render.yaml) file publishes this application as a
+static site, configures `VITE_API_URL`, and rewrites browser routes to
 `index.html`.

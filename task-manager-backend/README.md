@@ -1,118 +1,120 @@
 # Task Manager Backend
 
-API REST para gestionar proyectos y sus tareas. Está construida con NestJS,
-TypeScript, TypeORM y PostgreSQL, separando dominio, casos de uso, puertos e
-infraestructura.
+REST API for managing projects and their tasks. It is built as a **modular
+monolith** with NestJS, TypeScript, TypeORM, and PostgreSQL. It is deployed as a
+single application while maintaining explicit boundaries between the project,
+task, and shared modules. The internal design applies **Domain-Driven Design
+(DDD)** and hexagonal architecture.
 
-## Requisitos
+## Requirements
 
-- Node.js 22 o superior.
+- Node.js 22 or later.
 - pnpm 9.
-- Docker con Docker Compose.
+- Docker with Docker Compose.
 
-## Ejecución local
+## Local setup
 
-1. Entra al proyecto:
+1. Enter the project directory:
 
    ```bash
    cd task-manager-backend
    ```
 
-2. Instala las dependencias:
+2. Install dependencies:
 
    ```bash
    pnpm install --frozen-lockfile
    ```
 
-3. Crea el archivo de variables locales:
+3. Create the local environment file:
 
    ```bash
    cp .env.example .env
    ```
 
-   Los valores del ejemplo levantan PostgreSQL en `localhost:5432`. Si ese
-   puerto está ocupado, cambia `DB_PORT` tanto para Docker como para la API.
+   The example values run PostgreSQL at `localhost:5432`. If that port is
+   already in use, change `DB_PORT` for both Docker and the API.
 
-4. Inicia PostgreSQL:
+4. Start PostgreSQL:
 
    ```bash
    docker compose up -d db
    ```
 
-5. Ejecuta las migraciones:
+5. Run the migrations:
 
    ```bash
    pnpm run migration:run
    ```
 
-6. Inicia la API en modo desarrollo:
+6. Start the API in development mode:
 
    ```bash
    pnpm run start:dev
    ```
 
-7. Comprueba que esté disponible:
+7. Check that it is available:
 
    ```bash
    curl http://localhost:3000/health
    ```
 
-   La respuesta esperada es:
+   Expected response:
 
    ```json
    { "status": "ok" }
    ```
 
-Para detener la base de datos:
+To stop the database:
 
 ```bash
 docker compose down
 ```
 
-El volumen `db_data` conserva los datos. Usa `docker compose down --volumes`
-solo si quieres eliminarlos.
+The `db_data` volume preserves the data. Use
+`docker compose down --volumes` only when you want to delete it.
 
-## Variables de entorno
+## Environment variables
 
-| Variable       | Requerida      | Valor local    | Descripción                                                      |
-| -------------- | -------------- | -------------- | ---------------------------------------------------------------- |
-| `PORT`         | No             | `3000`         | Puerto HTTP de la API.                                           |
-| `CORS_ORIGINS` | No             | URLs de Vite   | Orígenes permitidos, separados por comas.                        |
-| `DB_HOST`      | Sí en local    | `localhost`    | Host de PostgreSQL.                                              |
-| `DB_PORT`      | No             | `5432`         | Puerto de PostgreSQL.                                            |
-| `DB_USERNAME`  | Sí en local    | `admin`        | Usuario de PostgreSQL.                                           |
-| `DB_PASSWORD`  | Sí en local    | `pass`         | Contraseña de PostgreSQL.                                        |
-| `DB_DATABASE`  | Sí en local    | `task_manager` | Nombre de la base de datos.                                      |
-| `DB_SSL`       | No             | `false`        | Activa SSL en la conexión.                                       |
-| `DATABASE_URL` | Solo en Render | —              | Reemplaza las variables `DB_*` de conexión cuando está definida. |
+| Variable       | Required  | Local value    | Description                                                    |
+| -------------- | --------- | -------------- | -------------------------------------------------------------- |
+| `PORT`         | No        | `3000`         | API HTTP port.                                                 |
+| `CORS_ORIGINS` | No        | Vite URLs      | Allowed origins, separated by commas.                          |
+| `DB_HOST`      | Locally   | `localhost`    | PostgreSQL host.                                               |
+| `DB_PORT`      | No        | `5432`         | PostgreSQL port.                                               |
+| `DB_USERNAME`  | Locally   | `admin`        | PostgreSQL user.                                               |
+| `DB_PASSWORD`  | Locally   | `pass`         | PostgreSQL password.                                           |
+| `DB_DATABASE`  | Locally   | `task_manager` | Database name.                                                 |
+| `DB_SSL`       | No        | `false`        | Enables SSL for the database connection.                       |
+| `DATABASE_URL` | On Render | —              | Replaces the connection-related `DB_*` variables when defined. |
 
 ## Endpoints
 
-Todos los cuerpos y respuestas usan JSON, excepto las respuestas `204`.
+All request and response bodies use JSON except for `204` responses.
 
-| Método   | Ruta                                 | Entrada                                                      | Respuesta exitosa      | Descripción                                   |
-| -------- | ------------------------------------ | ------------------------------------------------------------ | ---------------------- | --------------------------------------------- |
-| `GET`    | `/health`                            | —                                                            | `200`                  | Comprueba la disponibilidad de la API.        |
-| `POST`   | `/projects`                          | Header `Idempotency-Key`; body `name`, `description?`        | `201`; `200` en replay | Crea un proyecto de forma idempotente.        |
-| `GET`    | `/projects`                          | —                                                            | `200`                  | Lista los proyectos.                          |
-| `GET`    | `/projects/:projectId`               | Path `projectId`                                             | `200`                  | Consulta un proyecto.                         |
-| `PATCH`  | `/projects/:projectId`               | `name?`, `description?`                                      | `200`                  | Actualiza al menos un campo del proyecto.     |
-| `DELETE` | `/projects/:projectId`               | Path `projectId`                                             | `204`                  | Elimina el proyecto y sus datos dependientes. |
-| `GET`    | `/projects/:projectId/summary`       | Path `projectId`                                             | `200`                  | Obtiene indicadores de tareas del proyecto.   |
-| `POST`   | `/projects/:projectId/tasks`         | `title`, `description?`, `priority?`, `dueDate?`             | `201`                  | Crea una tarea en estado `pending`.           |
-| `GET`    | `/projects/:projectId/tasks`         | Query `status?`, `priority?`, `search?`                      | `200`                  | Lista y filtra las tareas del proyecto.       |
-| `GET`    | `/projects/:projectId/tasks/:taskId` | Paths `projectId`, `taskId`                                  | `200`                  | Consulta una tarea del proyecto.              |
-| `PATCH`  | `/projects/:projectId/tasks/:taskId` | `title?`, `description?`, `status?`, `priority?`, `dueDate?` | `200`                  | Actualiza al menos un campo de la tarea.      |
-| `DELETE` | `/projects/:projectId/tasks/:taskId` | Paths `projectId`, `taskId`                                  | `204`                  | Elimina una tarea.                            |
+| Method   | Route                                | Input                                                        | Successful response    | Description                                 |
+| -------- | ------------------------------------ | ------------------------------------------------------------ | ---------------------- | ------------------------------------------- |
+| `GET`    | `/health`                            | —                                                            | `200`                  | Checks API availability.                    |
+| `POST`   | `/projects`                          | `Idempotency-Key` header; `name`, `description?` body        | `201`; `200` on replay | Creates a project idempotently.             |
+| `GET`    | `/projects`                          | —                                                            | `200`                  | Lists projects.                             |
+| `GET`    | `/projects/:projectId`               | `projectId` path parameter                                   | `200`                  | Retrieves a project.                        |
+| `PATCH`  | `/projects/:projectId`               | `name?`, `description?`                                      | `200`                  | Updates at least one project field.         |
+| `DELETE` | `/projects/:projectId`               | `projectId` path parameter                                   | `204`                  | Deletes the project and its dependent data. |
+| `GET`    | `/projects/:projectId/summary`       | `projectId` path parameter                                   | `200`                  | Retrieves project task indicators.          |
+| `POST`   | `/projects/:projectId/tasks`         | `title`, `description?`, `priority?`, `dueDate?`             | `201`                  | Creates a task with `pending` status.       |
+| `GET`    | `/projects/:projectId/tasks`         | `status?`, `priority?`, `search?` query parameters           | `200`                  | Lists and filters project tasks.            |
+| `GET`    | `/projects/:projectId/tasks/:taskId` | `projectId`, `taskId` path parameters                        | `200`                  | Retrieves a task from the project.          |
+| `PATCH`  | `/projects/:projectId/tasks/:taskId` | `title?`, `description?`, `status?`, `priority?`, `dueDate?` | `200`                  | Updates at least one task field.            |
+| `DELETE` | `/projects/:projectId/tasks/:taskId` | `projectId`, `taskId` path parameters                        | `204`                  | Deletes a task.                             |
 
-### Valores permitidos
+### Allowed values
 
 - `status`: `pending`, `in-progress`, `completed`.
 - `priority`: `low`, `medium`, `high`.
-- `dueDate`: fecha ISO 8601 con offset; acepta `null` al actualizar.
-- `search`: hasta 150 caracteres; busca en título y descripción.
+- `dueDate`: ISO 8601 date with an offset; accepts `null` when updating.
+- `search`: up to 150 characters; searches titles and descriptions.
 
-El resumen tiene esta forma:
+The project summary has the following shape:
 
 ```json
 {
@@ -132,7 +134,7 @@ El resumen tiene esta forma:
 }
 ```
 
-Los errores siguen un contrato uniforme:
+Errors follow a consistent contract:
 
 ```json
 {
@@ -146,39 +148,55 @@ Los errores siguen un contrato uniforme:
 }
 ```
 
-## Arquitectura interna
+## Internal architecture
 
-La aplicación sigue una arquitectura hexagonal por módulo. El dominio no
-depende de NestJS, TypeORM ni PostgreSQL.
+The application is a **modular monolith**: every module runs in a single process
+and is deployed as one API rather than as separate microservices. Internally,
+`project` and `task` retain their own domains, use cases, ports, and persistence
+adapters.
+
+The module boundaries follow **Domain-Driven Design (DDD)**. Each business
+module owns its domain model and uses aggregates, value objects, domain enums,
+and typed domain errors to express rules and invariants. The `application` layer
+coordinates those models through use cases without moving business rules into
+controllers or persistence adapters.
+
+Each module also applies hexagonal architecture. The domain does not depend on
+NestJS, TypeORM, or PostgreSQL, and communication between layers occurs through
+explicit ports.
 
 ```mermaid
 flowchart LR
-  Client["Cliente HTTP"] --> Controller["Interfaces HTTP<br/>Controllers + Zod"]
-  Controller --> Composition["Composition root<br/>Factories + DI de NestJS"]
-  Composition --> UseCase["Application<br/>Casos de uso"]
-  UseCase --> Domain["Domain<br/>Aggregates, enums y value objects"]
-  UseCase --> Port["Application ports<br/>Stores y query stores"]
-  Adapter["Infrastructure<br/>Adapters TypeORM"] -. implementa .-> Port
-  Adapter --> ORM["Entidades y migraciones TypeORM"]
+  Client["HTTP client"] --> Controller["HTTP interfaces<br/>Controllers + Zod"]
+
+  subgraph Monolith["Modular monolith · one NestJS application"]
+    Controller --> Composition["Composition root<br/>Factories + NestJS DI"]
+    Composition --> UseCase["Application<br/>Use cases"]
+    UseCase --> Domain["DDD domain model<br/>Aggregates, enums, and value objects"]
+    UseCase --> Port["Application ports<br/>Stores and query stores"]
+    Adapter["Infrastructure<br/>TypeORM adapters"] -. implements .-> Port
+    Adapter --> ORM["TypeORM entities and migrations"]
+    Shared["Shared<br/>Errors and identity"] --> UseCase
+    Shared --> Domain
+  end
+
   ORM --> PostgreSQL[("PostgreSQL")]
-  Shared["Shared<br/>Errores e identidad"] --> UseCase
-  Shared --> Domain
 ```
 
-Responsabilidades principales:
+Main responsibilities:
 
-- `apps/api`: configuración, composición de dependencias y controladores HTTP.
-- `libs/project`: dominio, casos de uso y persistencia de proyectos.
-- `libs/task`: dominio, casos de uso, filtros, resumen y persistencia de tareas.
-- `libs/shared`: errores comunes y generación de identificadores.
-- `test`: pruebas unitarias y HTTP E2E separadas de la implementación.
+- `apps/api`: configuration, dependency composition, and HTTP controllers.
+- `libs/project`: project domain, use cases, and persistence.
+- `libs/task`: task domain, use cases, filters, summary, and persistence.
+- `libs/shared`: shared errors and identifier generation.
+- `test`: unit and HTTP E2E tests kept separate from the implementation.
 
-## Modelo de datos
+## Data model
 
 ```mermaid
 erDiagram
-  PROJECTS ||--o{ TASKS : "contiene"
-  PROJECTS ||--o{ PROJECT_IDEMPOTENCY_RECORDS : "registra"
+  PROJECTS ||--o{ TASKS : "contains"
+  PROJECTS ||--o{ PROJECT_IDEMPOTENCY_RECORDS : "records"
 
   PROJECTS {
     varchar_64 id PK
@@ -209,28 +227,28 @@ erDiagram
   }
 ```
 
-- Al eliminar un proyecto, PostgreSQL elimina en cascada sus tareas y registros
-  de idempotencia.
-- `tasks` tiene un índice compuesto por `project_id`, `status` y `priority`.
-- `project_idempotency_records` tiene un índice sobre `aggregate_id`.
-- `task_status` admite `pending`, `in-progress` y `completed`.
-- `task_priority` admite `low`, `medium` y `high`.
+- Deleting a project causes PostgreSQL to cascade-delete its tasks and
+  idempotency records.
+- `tasks` has a composite index on `project_id`, `status`, and `priority`.
+- `project_idempotency_records` has an index on `aggregate_id`.
+- `task_status` accepts `pending`, `in-progress`, and `completed`.
+- `task_priority` accepts `low`, `medium`, and `high`.
 
-## Scripts útiles
+## Useful scripts
 
-| Comando                       | Descripción                           |
-| ----------------------------- | ------------------------------------- |
-| `pnpm run start:dev`          | Inicia NestJS en modo watch.          |
-| `pnpm run build`              | Genera el build en `dist`.            |
-| `pnpm run start:prod`         | Ejecuta el build compilado.           |
-| `pnpm run migration:run`      | Ejecuta migraciones desde TypeScript. |
-| `pnpm run migration:run:prod` | Ejecuta migraciones compiladas.       |
-| `pnpm run migration:revert`   | Revierte la última migración local.   |
-| `pnpm run lint`               | Ejecuta ESLint.                       |
-| `pnpm test -- --runInBand`    | Ejecuta toda la suite de pruebas.     |
+| Command                       | Description                         |
+| ----------------------------- | ----------------------------------- |
+| `pnpm run start:dev`          | Starts NestJS in watch mode.        |
+| `pnpm run build`              | Generates the build in `dist`.      |
+| `pnpm run start:prod`         | Runs the compiled build.            |
+| `pnpm run migration:run`      | Runs migrations from TypeScript.    |
+| `pnpm run migration:run:prod` | Runs compiled migrations.           |
+| `pnpm run migration:revert`   | Reverts the latest local migration. |
+| `pnpm run lint`               | Runs ESLint.                        |
+| `pnpm test -- --runInBand`    | Runs the complete test suite.       |
 
-## Despliegue en Render
+## Render deployment
 
-El archivo [`../render.yaml`](../render.yaml) define la API, PostgreSQL y la UI.
-La API ejecuta las migraciones antes de iniciar y Render consulta `/health` para
-validar cada despliegue.
+The [`../render.yaml`](../render.yaml) file defines the API, PostgreSQL, and UI.
+The API runs migrations before startup, and Render checks `/health` to validate
+each deployment.
