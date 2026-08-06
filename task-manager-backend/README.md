@@ -78,6 +78,7 @@ The `db_data` volume preserves the data. Use
 
 | Variable       | Required  | Local value    | Description                                                    |
 | -------------- | --------- | -------------- | -------------------------------------------------------------- |
+| `NODE_ENV`     | No        | `development`  | Use `production` to emit logs as single-line JSON.             |
 | `PORT`         | No        | `3000`         | API HTTP port.                                                 |
 | `CORS_ORIGINS` | No        | Vite URLs      | Allowed origins, separated by commas.                          |
 | `DB_HOST`      | Locally   | `localhost`    | PostgreSQL host.                                               |
@@ -147,6 +148,22 @@ Errors follow a consistent contract:
   }
 }
 ```
+
+## Logging
+
+The API logs the HTTP request lifecycle without recording request bodies,
+credentials, or sensitive headers. Each entry includes an event name, request
+ID, method, path, and—when the request finishes—its status code and duration.
+Responses from `400` to `499` use the warning level, while `500` responses and
+unexpected exceptions use the error level with diagnostic exception details.
+
+Every request receives an `X-Request-Id` response header. A client may send a
+valid `X-Request-Id` to correlate its own logs; otherwise, the API generates a
+UUID. The header is exposed through CORS so browser clients can read it.
+
+In development, NestJS prints human-readable logs. With
+`NODE_ENV=production`, the same entries are emitted as single-line JSON, which
+Render can ingest and search without additional logging infrastructure.
 
 ## Internal architecture
 

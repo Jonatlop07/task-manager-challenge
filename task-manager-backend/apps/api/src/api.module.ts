@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { environmentConfig } from '@api/config';
@@ -23,6 +23,7 @@ import {
 } from '@project/infrastructure';
 import { TaskOrmEntity } from '@task/infrastructure';
 import { DataSource } from 'typeorm';
+import { HttpLoggingMiddleware } from './interfaces/http/logging/http-logging.middleware';
 
 @Module({
   imports: [
@@ -117,4 +118,8 @@ import { DataSource } from 'typeorm';
     },
   ],
 })
-export class ApiModule {}
+export class ApiModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(HttpLoggingMiddleware).forRoutes('*');
+  }
+}
