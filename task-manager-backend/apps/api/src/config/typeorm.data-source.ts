@@ -13,11 +13,7 @@ const migrationsRoot = __filename.endsWith('.ts') ? '' : 'dist/';
 
 export default new DataSource({
   type: 'postgres',
-  host: environment.database.host,
-  port: environment.database.port,
-  username: environment.database.username,
-  password: environment.database.password,
-  database: environment.database.name,
+  ...environment.database.connection,
   ssl: environment.database.ssl,
   synchronize: false,
   migrationsRun: false,

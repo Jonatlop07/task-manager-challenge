@@ -5,6 +5,7 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "nest build",
     "db:up": "docker-compose up -d db",
@@ -24,6 +25,7 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:show": "pnpm typeorm migration:show -d apps/api/src/config/typeorm.data-source.ts",
     "migration:run": "pnpm typeorm migration:run -d apps/api/src/config/typeorm.data-source.ts",
+    "migration:run:prod": "typeorm migration:run -d dist/apps/api/src/config/typeorm.data-source.js",
     "migration:revert": "pnpm typeorm migration:revert -d apps/api/src/config/typeorm.data-source.ts"
   },
   "dependencies": {

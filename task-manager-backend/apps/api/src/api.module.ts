@@ -16,6 +16,7 @@ import { createApiGetTaskUseCase } from './composition/tasks/api-get-task-use-ca
 import { createApiGetProjectSummaryUseCase } from './composition/tasks/api-get-project-summary-use-case.factory';
 import { ProjectsController } from './interfaces/http/projects/projects.controller';
 import { TasksController } from './interfaces/http/tasks/tasks.controller';
+import { HealthController } from './interfaces/http/health/health.controller';
 import {
   ProjectIdempotencyRecordOrmEntity,
   ProjectOrmEntity,
@@ -34,11 +35,7 @@ import { DataSource } from 'typeorm';
       inject: [environmentConfig.KEY],
       useFactory: (config: ConfigType<typeof environmentConfig>) => ({
         type: 'postgres',
-        host: config.database.host,
-        port: config.database.port,
-        username: config.database.username,
-        password: config.database.password,
-        database: config.database.name,
+        ...config.database.connection,
         ssl: config.database.ssl,
         autoLoadEntities: true,
         synchronize: false,
@@ -50,7 +47,7 @@ import { DataSource } from 'typeorm';
       TaskOrmEntity,
     ]),
   ],
-  controllers: [ProjectsController, TasksController],
+  controllers: [HealthController, ProjectsController, TasksController],
   providers: [
     {
       provide: API_PROVIDER_TOKENS.CREATE_PROJECT_USE_CASE,

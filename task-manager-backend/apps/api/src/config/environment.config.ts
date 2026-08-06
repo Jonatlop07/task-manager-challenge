@@ -13,11 +13,15 @@ export interface EnvironmentConfiguration {
     corsOrigins: string[];
   };
   database: {
-    host: string;
-    port: number;
-    username: string;
-    password: string;
-    name: string;
+    connection:
+      | Readonly<{ url: string }>
+      | Readonly<{
+          host: string;
+          port: number;
+          username: string;
+          password: string;
+          database: string;
+        }>;
     ssl: boolean;
   };
 }
@@ -85,6 +89,36 @@ function parseCorsOrigins(value: string | undefined): string[] {
   return origins;
 }
 
+function parseDatabaseConnection(
+  environment: NodeJS.ProcessEnv,
+): EnvironmentConfiguration['database']['connection'] {
+  const connectionString = environment.DATABASE_URL?.trim();
+
+  if (connectionString) {
+    let url: URL;
+
+    try {
+      url = new URL(connectionString);
+    } catch {
+      throw new Error('DATABASE_URL must be a valid PostgreSQL URL');
+    }
+
+    if (!['postgres:', 'postgresql:'].includes(url.protocol)) {
+      throw new Error('DATABASE_URL must use the postgres protocol');
+    }
+
+    return { url: connectionString };
+  }
+
+  return {
+    host: getRequiredVariable(environment, 'DB_HOST'),
+    port: parsePort(environment.DB_PORT, 'DB_PORT', DEFAULT_DATABASE_PORT),
+    username: getRequiredVariable(environment, 'DB_USERNAME'),
+    password: getRequiredVariable(environment, 'DB_PASSWORD'),
+    database: getRequiredVariable(environment, 'DB_DATABASE'),
+  };
+}
+
 export function loadEnvironment(
   environment: NodeJS.ProcessEnv = process.env,
 ): EnvironmentConfiguration {
@@ -94,11 +128,7 @@ export function loadEnvironment(
       corsOrigins: parseCorsOrigins(environment.CORS_ORIGINS),
     },
     database: {
-      host: getRequiredVariable(environment, 'DB_HOST'),
-      port: parsePort(environment.DB_PORT, 'DB_PORT', DEFAULT_DATABASE_PORT),
-      username: getRequiredVariable(environment, 'DB_USERNAME'),
-      password: getRequiredVariable(environment, 'DB_PASSWORD'),
-      name: getRequiredVariable(environment, 'DB_DATABASE'),
+      connection: parseDatabaseConnection(environment),
       ssl: parseBoolean(environment.DB_SSL, 'DB_SSL'),
     },
   };
